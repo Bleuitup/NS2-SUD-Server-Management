@@ -17,7 +17,7 @@ NS2 Launch Pad layout, matching the author's other mods:
 
 ```
 mod.settings                       Workshop metadata and description (never put a backslash in it)
-preview.jpg                        Workshop preview, 1024x1024 (made by the author with GPT)
+preview.jpg                        Workshop preview, 512x512 (author's GPT artwork; Launch Pad scales it to 512)
 source/lua/entry/SSM.entry         entry: Server script only, for now
 source/lua/SSM/Server.lua          loads each feature's server file
 source/lua/SSM/<Feature>/...       one folder per feature
@@ -26,8 +26,9 @@ output/                            Launch Pad build output, gitignored
 ```
 
 Build before publishing (no compile step): `rm -rf output && mkdir -p output && cp -r source/. output/`.
-Launch Pad rewrites `mod.settings` on publish, and adds `publish_id` on the
-first publish.
+Launch Pad rewrites `mod.settings` on publish. Workshop id `3822092803` (`publish_id`, first published
+2026-10-18). On that first publish Launch Pad refused the hand-written file; the author deleted it,
+published, and the description was restored from git afterwards. Keep `image = "preview.jpg"` in it.
 
 New features get their own folder under `lua/SSM/` and a line in `SSM/Server.lua`. A feature that
 needs client code or network messages adds `Client` / `Shared` (and `FileHooks` if needed) back to
