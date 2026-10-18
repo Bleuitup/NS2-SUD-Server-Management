@@ -240,6 +240,17 @@ local listed = select(2, lines[1]:gsub(",", "")) + 1
 check(listed == 5, "rounds list has 5 names, got " .. listed)
 check(not lines[1]:find("P207") and not lines[2]:find("P207"), "disconnected players are not listed")
 
+-- The console gets everyone with a count: A and C (4 rounds, 30 + 10 min) and 201-206 (1 round,
+-- 10 min). B and D sat the last round out; 207 is gone.
+local full = SSM_MatchesInARow_GetFullStreaksLines()
+check(#full == 18, "console list: 2 headers + 8 players twice, got " .. #full)
+check(full[1] == "Rounds in a row:" and full[10] == "Minutes in a row:", "console list headers")
+check(full[2] == "  1. P101  4r  40m" and full[3] == "  2. P103  4r  40m" and full[4] == "  3. P201  1r  10m",
+    "console rounds ranking, got " .. tostring(full[2]) .. " | " .. tostring(full[3]) .. " | " .. tostring(full[4]))
+check(full[11] == "  1. P101  40m  4r" and full[18] == "  8. P206  10m  1r", "console minutes ranking, got " .. tostring(full[11]) .. " | " .. tostring(full[18]))
+local fullText = table.concat(full, "\n")
+check(not fullText:find("P207") and not fullText:find("P102") and not fullText:find("P104"), "console list skips the disconnected and players at 0")
+
 local registered, notified, printed = nil, {}, {}
 Shine = {
     Commands = {},
@@ -261,7 +272,7 @@ Hooks.UpdateServer()
 check(registered and registered.con == "sud_streaks" and registered.chat == "streaks", "commands registered")
 check(registered and registered.noPerm == true, "open to everyone")
 registered.fn(caller)
-check(#printed == 2 and printed[1].client == caller, "console: 2 lines to the caller")
+check(#printed == 18 and printed[1].client == caller, "console: the full list to the caller, got " .. #printed)
 Shine.fromChat = true
 registered.fn(caller)
 check(#notified == 2 and notified[1].client == caller, "chat: 2 lines to the caller only")

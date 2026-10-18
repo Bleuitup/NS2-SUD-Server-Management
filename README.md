@@ -7,17 +7,30 @@ Server side only: none of its code runs on players' machines.
 
 Built for a server with no queue, where players hand their slot to a waiting spectator after a few
 games. The server counts how many rounds in a row each player has played and how many minutes they
-played over them. Anyone can check the top of both lists:
+played over them. Anyone can check:
 
-- `!streaks` in chat (the answer is only shown to whoever typed it)
-- `sud_streaks` in the console
+- `!streaks` in chat gives the top 5 by rounds and the top 5 by minutes, shown only to whoever
+  typed it:
 
-```
-Most rounds in a row: Bleu 4r, Pepe 4r, Juan 3r, Ana 3r, Leo 2r
-Most minutes in a row: Pepe 140m, Bleu 128m, Ana 101m, Juan 95m, Leo 60m
-```
+  ```
+  Most rounds in a row: Pepe 4r, Bleu 4r, Ana 3r, Juan 3r, Leo 2r
+  Most minutes in a row: Pepe 140m, Bleu 128m, Ana 101m, Juan 95m, Leo 60m
+  ```
 
-Only connected players are listed. Ties on rounds are broken by minutes, and the other way round.
+- `sud_streaks` in the console lists every player with a count, ranked both ways:
+
+  ```
+  Rounds in a row:
+    1. Pepe  4r  140m
+    2. Bleu  4r  128m
+  ...
+  Minutes in a row:
+    1. Pepe  140m  4r
+    2. Bleu  128m  4r
+  ...
+  ```
+
+Only connected players are listed, and players at 0 are left out. Ties on rounds are broken by minutes, and the other way round.
 The commands need Shine; without it the counting still runs but there is no way to see it.
 Nothing is enforced.
 

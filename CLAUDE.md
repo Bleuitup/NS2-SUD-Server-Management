@@ -37,8 +37,9 @@ register them in the same order.
 
 ## Feature: Matches In A Row
 
-Counts rounds in a row and minutes played over them, and shows the top 5 of each through
-`sud_streaks` (console) and `!streaks` (chat, caller only). Built for a server with no
+Counts rounds in a row and minutes played over them. `sud_streaks` (console) lists every
+connected player with a count, ranked by rounds and by minutes; `!streaks` (chat, caller only)
+gives the top 5 of each. Built for a server with no
 queue (16 players + 5 spectators) where players hand their slot to a spectator after 3-4 games.
 Information only; never make it enforce anything.
 
@@ -70,8 +71,10 @@ ScoreBoard.
   read as skill ranks.
 - **Asked mid-round, the commands show the ranking from the last finished round**, which falls
   out of counts only changing at round end. The author wants them answering at any time.
-- **The commands are open to everyone**, for transparency. Top 5 by rounds (ties by minutes, then
-  name) and top 5 by minutes (ties by rounds, then name), connected players only.
+- **The commands are open to everyone**, for transparency. Ranked by rounds (ties by minutes,
+  then name) and by minutes (ties by rounds, then name), connected players with a count only.
+  **The console gets the full list** (the author: the console has room for all 16 players), one
+  player per line; **chat gets two lines with the top 5 of each**, because chat is small.
 
 ### How it works (`MatchesInARow/Server.lua`)
 

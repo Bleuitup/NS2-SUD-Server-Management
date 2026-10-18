@@ -24,8 +24,8 @@
 -- round, so a server that restarts deep into a 70-minute round still keeps its counts.
 --
 -- The counts are only ever shown through two commands, which need Shine: sud_streaks
--- (console) and !streaks (chat, seen only by whoever typed it) list the 5 connected players
--- with the most rounds in a row and the 5 with the most minutes. Open to everyone, for
+-- (console) lists every connected player with a count, ranked by rounds and by minutes; !streaks
+-- (chat, seen only by whoever typed it) gives the top 5 of each. Open to everyone, for
 -- transparency. Without Shine the commands simply do not exist. Nothing is sent to clients and
 -- the mod has no client files.
 
@@ -202,7 +202,7 @@ local function EndRound()
     Save()
 end
 
--- Streaks: top 5 of each list ------------------------------------------------------------------
+-- Streaks: the two rankings ------------------------------------------------------------------
 
 local kTopCount = 5
 
@@ -222,8 +222,10 @@ local function GetConnectedStreaks()
     return list
 end
 
--- "Bleu 4r, Pepe 4r, ..." ranked by `first`, ties broken by `second`, then by name.
-local function FormatTop(list, first, second, suffix)
+local kNobody = "Nobody has played a round in a row yet."
+
+-- Ranks by `first`, ties broken by `second`, then by name.
+local function Rank(list, first, second)
     table.sort(list, function(a, b)
         if a[first] ~= b[first] then
             return a[first] > b[first]
@@ -233,6 +235,11 @@ local function FormatTop(list, first, second, suffix)
         end
         return a.name < b.name
     end)
+end
+
+-- "Bleu 4r, Pepe 4r, ..." - the top kTopCount, for chat.
+local function FormatTop(list, first, second, suffix)
+    Rank(list, first, second)
 
     local parts = {}
     for i = 1, math.min(kTopCount, #list) do
@@ -242,10 +249,11 @@ local function FormatTop(list, first, second, suffix)
     return table.concat(parts, ", ")
 end
 
+-- Two short lines for chat, which has little room.
 function SSM_MatchesInARow_GetStreaksLines()
     local list = GetConnectedStreaks()
     if #list == 0 then
-        return { "Nobody has played a round in a row yet." }
+        return { kNobody }
     end
 
     return {
@@ -254,17 +262,42 @@ function SSM_MatchesInARow_GetStreaksLines()
     }
 end
 
-local function OnStreaks(client)
-    local fromChat = Shine:IsCommandFromChat()
+-- Everyone with a count, one per line, for the console.
+function SSM_MatchesInARow_GetFullStreaksLines()
+    local list = GetConnectedStreaks()
+    if #list == 0 then
+        return { kNobody }
+    end
 
-    for _, line in ipairs(SSM_MatchesInARow_GetStreaksLines()) do
-        if not client then
-            Shared.Message(line)
-        elseif fromChat then
-            -- Goes to this client only.
+    local lines = { "Rounds in a row:" }
+    Rank(list, "rounds", "minutes")
+    for i, entry in ipairs(list) do
+        lines[#lines + 1] = string.format("%3d. %s  %dr  %dm", i, entry.name, entry.rounds, entry.minutes)
+    end
+
+    lines[#lines + 1] = "Minutes in a row:"
+    Rank(list, "minutes", "rounds")
+    for i, entry in ipairs(list) do
+        lines[#lines + 1] = string.format("%3d. %s  %dm  %dr", i, entry.name, entry.minutes, entry.rounds)
+    end
+
+    return lines
+end
+
+local function OnStreaks(client)
+    if client and Shine:IsCommandFromChat() then
+        -- Goes to this client only.
+        for _, line in ipairs(SSM_MatchesInARow_GetStreaksLines()) do
             Shine:NotifyDualColour(client, 180, 180, 180, "[Matches In A Row]", 255, 255, 255, line)
-        else
+        end
+        return
+    end
+
+    for _, line in ipairs(SSM_MatchesInARow_GetFullStreaksLines()) do
+        if client then
             ServerAdminPrint(client, line)
+        else
+            Shared.Message(line)
         end
     end
 end
@@ -280,7 +313,7 @@ local function RegisterCommands()
     end
 
     local command = Shine:RegisterCommand("sud_streaks", "streaks", OnStreaks, true)
-    command:Help("Lists the 5 players with the most rounds in a row and the 5 with the most minutes.")
+    command:Help("Lists rounds and minutes played in a row: every player in the console, the top 5 in chat.")
 end
 
 local function OnUpdateServer()
