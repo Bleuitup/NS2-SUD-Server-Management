@@ -34,7 +34,8 @@ same messages in the same order.
 
 ## Feature: Matches In A Row
 
-Shows `[3r, 95m] Name` on the scoreboard: rounds in a row and minutes played over them. Built for
+Shows `[3r 95m] Name` on the scoreboard (tag in light gray, no comma - the author's format):
+rounds in a row and minutes played over them. Built for
 a server with no queue (16 players + 5 spectators) where players hand their slot to a spectator
 after 3-4 games. The tag only informs; never make it enforce anything.
 
@@ -50,8 +51,14 @@ after 3-4 games. The tag only informs; never make it enforce anything.
 - Minutes are the player's own seconds on a team, summed over the rounds in the count.
 - **Counts and minutes only change at round end**, because that is when the server decides who
   spectates. The author explicitly does not want live-updating minutes.
-- The tag is plain text in the name's own color. It is part of the name string (see below), so
-  coloring it separately would mean redoing the scoreboard's name layout.
+- **The tag is hidden while a round is played** (`kGameState.Started`) and shown in the pregame
+  states and after a round ends. Purely client side; the counts are unaffected.
+- **Counts last one play session**: kept across map changes and restarts, dropped after
+  `ForgetAfterMinutes` (60) with nobody playing a round. The author confirmed 60 minutes; rounds
+  of 70+ minutes do happen, which is why activity is re-saved during rounds (see Server).
+- **`sh_freqplayers` / `!freqplayers` are open to everyone**, for transparency. They rank the
+  same in-a-row numbers the tags show: top 5 by rounds (ties by minutes, then name) and top 5 by
+  minutes (ties by rounds, then name), connected players only. Chat output goes to the caller only.
 
 ### Server (`Server.lua`)
 
@@ -66,18 +73,33 @@ after 3-4 games. The tag only informs; never make it enforce anything.
 - The server Lua restarts on every map change, so counts are saved to
   `config://SSM_MatchesInARowData.json` (a list, because JSON object keys come back as strings)
   and loaded at startup. `ForgetAfterMinutes` (60) is checked on load **and** at round start: the
-  server can sit idle on one map for hours.
+  server can sit idle on one map for hours. It is measured from `LastActiveAt`, which is set and
+  saved at round start, every `kActiveSaveSeconds` (300) during a round, and at round end, so a
+  restart 65 minutes into a 70-minute round still keeps the counts.
+- Commands go through Shine when it is loaded (`Shine:RegisterCommand`, `NoPerm = true`),
+  registered on the first `UpdateServer` rather than at file load, because load order between
+  mods is not guaranteed - the same opportunistic pattern Hive Spawn Selector uses for
+  CustomSpawns. Not a Shine plugin. `Shine:IsCommandFromChat()` picks chat
+  (`NotifyDualColour`, caller only) or console (`ServerAdminPrint`). Without Shine there are no
+  commands.
 - Sends `SSM_MatchesInARowClear` then one `SSM_MatchesInARow` per player with a count, to
   everyone at round end and to each client on `ClientConnect`.
 
 ### Client (`Client.lua`, `GUIScoreboard.lua`)
 
-- **The tag is put into the name inside a copy of the score records the scoreboard reads.** Each
+- **The tag is put into the name inside a copy of the score records the scoreboard reads, then
+  split back off into its own gray text item after `UpdateTeam`.** Each
   `self.teams[i].GetScores` is wrapped after `GUIScoreboard:Initialize`. The scoreboard then lays
   out and shortens the tagged name like any long name, so vanilla's and Devnull's truncation both
   keep working. Adding text to the name item afterwards would overflow into the icons, because
   both scoreboards shorten names from the item's text during `UpdateTeam`. The cached records
   are never modified.
+- The split (`SplitTags`): if the name item's text starts with the row's tag, a text item made
+  like the name item (`row.SSMTag`, child of `row.Background`) gets the tag at the name's
+  position, and the name gets the rest, moved right by the tag's width. Both scoreboards set the
+  name's text and position on every pass, so the move never accumulates. Every row is touched
+  every pass because rows are pooled and recycled. A name so long that shortening it cut into
+  the tag keeps the tag inline, in the name's color.
 - **`lua/GUIScoreboard.lua` is reached with a post file hook, never replace.** Devnull's Enhanced
   ScoreBoard (on the live server) replaces that file; a post hook runs after whichever version
   loaded. Only methods both versions have are wrapped (`Initialize`, `UpdateTeam`).
@@ -94,7 +116,8 @@ after 3-4 games. The tag only informs; never make it enforce anything.
 - `luac -p` every file (Lua 5.4 at `C:\Users\maost\AppData\Local\Programs\Lua\bin\`; NS2 runs
   LuaJIT/5.1, so this proves parsing only).
 - `lua test/matchesinarow.lua` from the repo root runs the real files against stubbed globals:
-  counting rules, saving and loading, expiry, tagging, highlight and commander header.
+  counting rules, saving and loading, expiry, the long-round restart, the commands, tagging,
+  hiding during rounds, the gray tag split, highlight and commander header.
 - Everything visual has to be checked in game through Launch Pad. No test-only console commands.
 
 ## Whitelisting

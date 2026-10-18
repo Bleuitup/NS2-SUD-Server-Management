@@ -1,16 +1,21 @@
 -- Matches In A Row - client side.
 --
 -- Keeps the counts the server sends and puts them in front of names on the scoreboard, as
--- "[3r, 95m] Name": 3 rounds in a row, 95 minutes played over them. Players at 0 show no tag.
+-- "[3r 95m] Name": 3 rounds in a row, 95 minutes played over them, the tag in light gray.
+-- Players at 0 show no tag, and nobody shows one while a round is being played: the tag is for
+-- deciding who spectates, which happens between rounds.
 --
--- The tag goes into the name itself, in a copy of the score records the scoreboard reads (see
--- GUIScoreboard.lua next to this file). That way the scoreboard lays out and shortens the tagged
--- name exactly as it would any long name, whether it is vanilla's or a replacement such as
--- Devnull's Enhanced ScoreBoard. The cached records themselves are never changed.
+-- The tag first goes into the name itself, in a copy of the score records the scoreboard reads
+-- (see GUIScoreboard.lua next to this file). That way the scoreboard lays out and shortens the
+-- tagged name exactly as it would any long name, whether it is vanilla's or a replacement such as
+-- Devnull's Enhanced ScoreBoard. After the scoreboard is done with a row, the tag is split back
+-- off into its own gray text item. The cached records themselves are never changed.
 
 SSM_MatchesInARow = {}
 
--- [steamId] = "[3r, 95m] "
+SSM_MatchesInARow.kTagColor = Color(0.7, 0.7, 0.7, 1)
+
+-- [steamId] = "[3r 95m] "
 local Tags = {}
 
 -- [tagged name] = real name, for the places the scoreboard compares names (see below). Never
@@ -23,23 +28,37 @@ Client.HookNetworkMessage("SSM_MatchesInARowClear", function()
 end)
 
 Client.HookNetworkMessage("SSM_MatchesInARow", function(message)
-    Tags[message.steamId] = string.format("[%dr, %dm] ", message.rounds, message.minutes)
+    Tags[message.steamId] = string.format("[%dr %dm] ", message.rounds, message.minutes)
 end)
+
+local function IsRoundBeingPlayed()
+    local gameInfo = GetGameInfoEntity()
+    return gameInfo ~= nil and gameInfo:GetState() == kGameState.Started
+end
 
 function SSM_MatchesInARow.GetRealName(name)
     return name and RealNames[name]
 end
 
--- Returns the score list with tagged copies of every record that has a count. Returns the same
--- list untouched when nobody on it has one.
+-- The tag to show for a scoreboard row right now, or nil.
+function SSM_MatchesInARow.GetTag(clientIndex)
+    if IsRoundBeingPlayed() then
+        return nil
+    end
+
+    -- nil until that player's PlayerInfoEntity has arrived, which just means no tag yet.
+    local steamId = clientIndex and GetSteamIdForClientIndex(clientIndex)
+    return steamId and Tags[steamId]
+end
+
+-- Returns the score list with tagged copies of every record that has a tag to show. Returns the
+-- same list untouched when nobody on it has one.
 function SSM_MatchesInARow.TagScores(scores)
     local tagged
 
     for i = 1, #scores do
         local record = scores[i]
-        -- nil until that player's PlayerInfoEntity has arrived, which just means no tag yet.
-        local steamId = GetSteamIdForClientIndex(record.ClientIndex)
-        local tag = steamId and Tags[steamId]
+        local tag = SSM_MatchesInARow.GetTag(record.ClientIndex)
 
         if tag and record.Name then
             if not tagged then

@@ -1,8 +1,9 @@
 -- Logic test for Matches In A Row, run outside the game against the real mod files:
 --   lua test/matchesinarow.lua        (from the repo root)
 --
--- Stubs only the few engine and vanilla globals the files touch. Proves the counting rules and
--- the scoreboard tagging; it says nothing about how the scoreboard looks in game.
+-- Stubs only the few engine, vanilla and Shine globals the files touch. Proves the counting
+-- rules, the commands and the scoreboard tagging; it says nothing about how the scoreboard looks
+-- in game.
 
 local kServerFile = "source/lua/SSM/MatchesInARow/Server.lua"
 local kClientFile = "source/lua/SSM/MatchesInARow/Client.lua"
@@ -46,7 +47,8 @@ function SaveConfigFile(name, data) Files[name] = deepcopy(data) end
 
 Shared = {
     GetTime = function() return Now end,
-    GetSystemTime = function() return SystemStart + math.floor(Now) end
+    GetSystemTime = function() return SystemStart + math.floor(Now) end,
+    Message = function() end
 }
 
 Server = {
@@ -63,7 +65,6 @@ Server = {
 
 Event = { Hook = function(name, fn) Hooks[name] = fn end }
 
-NS2Gamerules = { EndGame = function() Gamerules.started = false end }
 function Class_ReplaceMethod(className, methodName, method)
     local original = _G[className][methodName]
     _G[className][methodName] = method
@@ -85,6 +86,7 @@ local function AddPlayer(steamId, team)
         GetUserId = function() return steamId end
     }
     player.GetTeamNumber = function(self) return self.team end
+    player.GetName = function() return "P" .. steamId end
     Players[#Players + 1] = player
     return player
 end
@@ -102,13 +104,14 @@ local function StartGame()
     Gamerules.startTime = Now
 end
 
+-- A fresh server Lua, as after a map change or restart.
 local function LoadServer()
     Hooks = {}
     NS2Gamerules = { EndGame = function() Gamerules.started = false end }
     dofile(kServerFile)
 end
 
--- Count as the server last broadcast it: { [steamId] = "rounds/minutes" }.
+-- Counts as the server last broadcast them: { [steamId] = "rounds/minutes" }.
 local function Broadcast()
     local result, clearSeen = {}, false
     for _, entry in ipairs(Sent) do
@@ -123,8 +126,6 @@ local function Broadcast()
     return result, clearSeen
 end
 
-local function Count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n end
-
 -- ---------------------------------------------------------------------------------------------
 -- Server scenarios
 
@@ -135,7 +136,7 @@ local A = AddPlayer(101, kTeam1Index)
 local B = AddPlayer(102, kTeam2Index)
 local C = AddPlayer(103, kSpectatorIndex)
 local D = AddPlayer(104, kSpectatorIndex)
-local Bot = AddPlayer(0, kTeam1Index)
+AddPlayer(0, kTeam1Index) -- a bot
 
 -- Round 1: A and B from the start, C subs in at 5 minutes, D spectates. 10 minutes.
 Run(5)
@@ -209,6 +210,16 @@ counts = Broadcast()
 check(counts[101] == "3/37", "round 5: A 3 rounds 37 min across a map change, got " .. tostring(counts[101]))
 check(counts[103] == nil, "round 5: C sat out")
 
+-- A 70-minute round with a restart 65 minutes in: that round is lost, the counts are kept.
+StartGame()
+Run(65 * 60)
+check(Files["SSM_MatchesInARowData.json"].SavedAt >= SystemStart + math.floor(Now) - 300,
+    "activity was saved during the long round")
+Sent = {}
+LoadServer()
+Hooks.ClientConnect(newClient)
+check(#Sent == 2, "restart 65 minutes into a round keeps the counts (clear + A), got " .. #Sent)
+
 -- Server left alone for 2 hours on the same map: the next round starts from scratch.
 Now = Now + 7200
 Sent = {}
@@ -229,10 +240,63 @@ Hooks.ClientConnect(newClient)
 check(#Sent == 1, "stale save is dropped on load (only the clear is sent)")
 
 -- ---------------------------------------------------------------------------------------------
+-- Freq players
+
+A.team, B.team, C.team, D.team = kTeam1Index, kTeam2Index, kTeam1Index, kTeam2Index
+StartGame() Run(600) Gamerules:EndGame()
+D.team = kSpectatorIndex
+StartGame() Run(900) Gamerules:EndGame()
+-- B steps out 1 minute into round 3: still counts, fewer minutes. Ties on rounds go to minutes,
+-- then to the name.
+StartGame() Run(60) B.team = kSpectatorIndex Run(240) Gamerules:EndGame()
+
+local lines = SSM_MatchesInARow_GetFreqPlayersLines()
+check(lines[1] == "Most rounds in a row: P101 3r, P103 3r, P102 3r", "rounds list, got " .. tostring(lines[1]))
+check(lines[2] == "Most minutes in a row: P101 30m, P103 30m, P102 26m", "minutes list, got " .. tostring(lines[2]))
+
+local registered, notified, printed = nil, {}, {}
+Shine = {
+    Commands = {},
+    fromChat = false,
+    RegisterCommand = function(self, con, chat, fn, noPerm)
+        registered = { con = con, chat = chat, fn = fn, noPerm = noPerm }
+        return { Help = function() end }
+    end,
+    IsCommandFromChat = function(self) return self.fromChat end,
+    NotifyDualColour = function(self, client, _, _, _, prefix, _, _, _, text)
+        notified[#notified + 1] = { client = client, text = prefix .. " " .. text }
+    end
+}
+function ServerAdminPrint(client, text) printed[#printed + 1] = { client = client, text = text } end
+
+LoadServer() -- commands register on the first server update once Shine is there
+Hooks.UpdateServer()
+check(registered and registered.con == "sh_freqplayers" and registered.chat == "freqplayers", "commands registered")
+check(registered and registered.noPerm == true, "open to everyone")
+registered.fn(newClient)
+check(#printed == 2 and printed[1].client == newClient, "console: 2 lines to the caller")
+Shine.fromChat = true
+registered.fn(newClient)
+check(#notified == 2 and notified[1].client == newClient, "chat: 2 lines to the caller only")
+check(notified[1].text:find("^%[Matches In A Row%] Most rounds") ~= nil, "chat line has the prefix")
+Shine = nil
+
+-- ---------------------------------------------------------------------------------------------
 -- Client: tagging
 
 local ClientHooks = {}
 Client = { HookNetworkMessage = function(name, fn) ClientHooks[name] = fn end }
+
+kGameState = { NotStarted = 1, Started = 5, Team1Won = 6 }
+local GameState = kGameState.NotStarted
+function GetGameInfoEntity() return { GetState = function() return GameState end } end
+
+local VectorMeta = {}
+VectorMeta.__add = function(a, b) return Vector(a.x + b.x, a.y + b.y, 0) end
+VectorMeta.__mul = function(a, k) return Vector(a.x * k, a.y * k, 0) end
+function Vector(x, y, z) return setmetatable({ x = x, y = y, z = z }, VectorMeta) end
+function Color(r, g, b, a) return { r, g, b, a } end
+
 local LocalName = "Bleu"
 function ScoreboardUI_IsPlayerLocal(name) return name == LocalName end
 local SteamIds = { [1] = 101, [2] = 102, [3] = nil }
@@ -249,37 +313,87 @@ local records = {
     { ClientIndex = 3, Name = "Loading", Score = 0 }
 }
 local tagged = SSM_MatchesInARow.TagScores(records)
-check(tagged[1].Name == "[3r, 95m] Bleu", "tag format, got " .. tostring(tagged[1].Name))
+check(tagged[1].Name == "[3r 95m] Bleu", "tag format, got " .. tostring(tagged[1].Name))
 check(tagged[1].Score == 10, "tagged copy keeps the other fields")
 check(records[1].Name == "Bleu", "original record untouched")
 check(tagged[2] == records[2], "untagged record passed through")
 check(tagged[3] == records[3], "player without a Steam ID yet passed through")
-check(ScoreboardUI_IsPlayerLocal("[3r, 95m] Bleu"), "local highlight still finds the tagged row")
-check(not ScoreboardUI_IsPlayerLocal("[3r, 95m] Other"), "local highlight not fooled")
+check(ScoreboardUI_IsPlayerLocal("[3r 95m] Bleu"), "local highlight still finds the tagged row")
+check(not ScoreboardUI_IsPlayerLocal("[3r 95m] Other"), "local highlight not fooled")
+
+GameState = kGameState.Started
+check(SSM_MatchesInARow.TagScores(records) == records, "no tags while a round is played")
+GameState = kGameState.Team1Won
+check(SSM_MatchesInARow.TagScores(records)[1].Name == "[3r 95m] Bleu", "tags back once the round ends")
 
 ClientHooks.SSM_MatchesInARowClear()
 check(SSM_MatchesInARow.TagScores(records) == records, "after clear nobody is tagged")
 
+-- ---------------------------------------------------------------------------------------------
 -- Client: scoreboard hook
 
-GUIScoreboard = {}
+GUIItem = { Left = 0, Center = 1, Align_Min = 0, Align_Center = 1, NotEqual = 0 }
+function GUIMakeFontScale() end
+local function FakeItem(text)
+    local item = { text = text or "", pos = Vector(0, 0, 0), visible = true }
+    function item:GetText() return self.text end
+    function item:SetText(t) self.text = t end
+    function item:GetPosition() return self.pos end
+    function item:SetPosition(p) self.pos = p end
+    function item:GetTextWidth(t) return #t * 10 end
+    function item:SetIsVisible(v) self.visible = v end
+    function item:AddChild() end
+    for _, m in ipairs({ "SetFontName", "SetScale", "SetAnchor", "SetTextAlignmentX",
+                         "SetTextAlignmentY", "SetColor", "SetStencilFunc" }) do
+        item[m] = function() end
+    end
+    return item
+end
+GUIManager = { CreateTextItem = function() return FakeItem() end }
+
+GUIScoreboard = { kScalingFactor = 1, kPlayerStatsFontName = "font" }
 function GUIScoreboard:Initialize()
     self.teams = { { GetScores = function() return records end, GUIs = {} } }
 end
-function GUIScoreboard:UpdateTeam(team) self.lastScores = team.GetScores() end
+-- Mimics both scoreboards: name text and position are set on every pass.
+function GUIScoreboard:UpdateTeam(team)
+    self.lastScores = team.GetScores()
+    for i, row in ipairs(team.PlayerList) do
+        row.Name:SetText(self.lastScores[i].Name)
+        row.Name:SetPosition(Vector(30, 0, 0))
+        row.ClientIndex = self.lastScores[i].ClientIndex
+    end
+end
 
 dofile(kScoreboardFile)
 
 ClientHooks.SSM_MatchesInARow({ steamId = 102, rounds = 1, minutes = 12 })
 local board = setmetatable({}, { __index = GUIScoreboard })
 board:Initialize()
-local commText = "[1r, 12m] Other"
-local commItem = { GetText = function() return commText end, SetText = function(_, t) commText = t end }
-board.teams[1].GUIs.TeamInfo = { teamComm = commItem }
-SSM_MatchesInARow.TagScores(records) -- registers the tagged name, as a scoreboard pass would
-board:UpdateTeam(board.teams[1])
-check(board.lastScores[2].Name == "[1r, 12m] Other", "scoreboard rows read tagged names")
+local team = board.teams[1]
+team.PlayerList = {
+    { Background = FakeItem(), Name = FakeItem() },
+    { Background = FakeItem(), Name = FakeItem() },
+    { Background = FakeItem(), Name = FakeItem() }
+}
+local commText = "[1r 12m] Other"
+team.GUIs.TeamInfo = { teamComm = { GetText = function() return commText end, SetText = function(_, t) commText = t end } }
+
+board:UpdateTeam(team)
+check(board.lastScores[2].Name == "[1r 12m] Other", "scoreboard rows read tagged names")
 check(commText == "Other", "commander header shows the real name")
+
+local row = team.PlayerList[2]
+check(row.Name.text == "Other", "row name shows the real name, got " .. row.Name.text)
+check(row.SSMTag and row.SSMTag.text == "[1r 12m] " and row.SSMTag.visible, "row has a visible gray tag")
+check(row.SSMTag.pos.x == 30 and row.Name.pos.x == 30 + #"[1r 12m] " * 10, "tag where the name was, name moved after it")
+board:UpdateTeam(team)
+check(row.Name.pos.x == 30 + #"[1r 12m] " * 10, "name does not drift on repeated passes")
+check(team.PlayerList[3].SSMTag == nil, "no tag item for a player without a count")
+
+GameState = kGameState.Started
+board:UpdateTeam(team)
+check(row.Name.text == "Other" and not row.SSMTag.visible, "tag hidden while a round is played")
 
 print(string.format("%d passed, %d failed", passes, failures))
 os.exit(failures == 0 and 0 or 1)

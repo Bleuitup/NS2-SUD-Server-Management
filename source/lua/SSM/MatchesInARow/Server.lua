@@ -16,8 +16,13 @@
 -- Counts only change when a round ends, because that is when the server decides who spectates.
 --
 -- The server's Lua restarts on every map change, so counts are saved to a config file and read
--- back on load. Counts older than ForgetAfterMinutes (time since the last counted round) are
--- dropped, so yesterday's games never show up today.
+-- back on load. After ForgetAfterMinutes with nobody playing a round, counts are dropped, so each
+-- day's play session starts from scratch. "Playing" is refreshed every kActiveSaveSeconds during a
+-- round, so a server that restarts deep into a 70-minute round still keeps its counts.
+--
+-- With Shine loaded, sh_freqplayers (console) and !freqplayers (chat, seen only by whoever typed
+-- it) list the 5 connected players with the most rounds in a row and the 5 with the most minutes.
+-- Open to everyone, for transparency. Without Shine the commands simply do not exist.
 
 local kSettingsFile = "SSM_MatchesInARow.json"
 local kDataFile = "SSM_MatchesInARowData.json"
@@ -47,8 +52,11 @@ end
 -- [steamId] = { rounds = number, minutes = number }. Only players with a count of 1 or more.
 local Streaks = {}
 
--- System time (seconds) of the last round that counted, or nil if none is known.
-local LastCountedAt
+local kActiveSaveSeconds = 300
+
+-- System time (seconds) someone was last playing a round, or nil if none is known.
+local LastActiveAt
+local lastActiveSaveTime = 0
 
 -- The round being played, or nil outside one:
 -- { startTime = Shared.GetTime() at round start, seconds = { [steamId] = seconds on a team },
@@ -101,12 +109,12 @@ local function Save()
         players[#players + 1] = { id = steamId, rounds = streak.rounds, minutes = streak.minutes }
     end
 
-    SaveConfigFile(kDataFile, { SavedAt = LastCountedAt, Players = players })
+    SaveConfigFile(kDataFile, { SavedAt = LastActiveAt, Players = players })
 end
 
 local function IsForgotten()
-    return LastCountedAt ~= nil
-        and Shared.GetSystemTime() - LastCountedAt > Settings.ForgetAfterMinutes * 60
+    return LastActiveAt ~= nil
+        and Shared.GetSystemTime() - LastActiveAt > Settings.ForgetAfterMinutes * 60
 end
 
 local function Load()
@@ -115,7 +123,7 @@ local function Load()
         return
     end
 
-    LastCountedAt = data.SavedAt
+    LastActiveAt = data.SavedAt
     if IsForgotten() then
         return
     end
@@ -153,6 +161,13 @@ local function Sample(now)
     end)
 end
 
+-- Records that a round is being played right now, and saves it so a restart sees it too.
+local function MarkActive(now)
+    LastActiveAt = Shared.GetSystemTime()
+    lastActiveSaveTime = now
+    Save()
+end
+
 local function StartRound(startTime, now)
     Round = { startTime = startTime, seconds = {}, fromStart = {} }
     lastSampleTime = now
@@ -164,6 +179,7 @@ local function StartRound(startTime, now)
         SendAll(nil)
     end
 
+    MarkActive(now)
     Sample(now)
 end
 
@@ -196,13 +212,98 @@ local function EndRound()
     end
 
     Streaks = newStreaks
-    LastCountedAt = Shared.GetSystemTime()
+    LastActiveAt = Shared.GetSystemTime()
 
     Save()
     SendAll(nil)
 end
 
+-- Freq players: top 5 of each list -------------------------------------------------------------
+
+local kTopCount = 5
+
+-- Connected players with a count, as { name, rounds, minutes }.
+local function GetConnectedStreaks()
+    local list, seen = {}, {}
+
+    Server.ForAllPlayers(function(player)
+        local steamId = GetSteamId(player)
+        local streak = steamId and Streaks[steamId]
+        if streak and not seen[steamId] then
+            seen[steamId] = true
+            list[#list + 1] = { name = player:GetName(), rounds = streak.rounds, minutes = streak.minutes }
+        end
+    end)
+
+    return list
+end
+
+-- "Bleu 4r, Pepe 4r, ..." ranked by `first`, ties broken by `second`, then by name.
+local function FormatTop(list, first, second, suffix)
+    table.sort(list, function(a, b)
+        if a[first] ~= b[first] then
+            return a[first] > b[first]
+        end
+        if a[second] ~= b[second] then
+            return a[second] > b[second]
+        end
+        return a.name < b.name
+    end)
+
+    local parts = {}
+    for i = 1, math.min(kTopCount, #list) do
+        parts[i] = string.format("%s %d%s", list[i].name, list[i][first], suffix)
+    end
+
+    return table.concat(parts, ", ")
+end
+
+function SSM_MatchesInARow_GetFreqPlayersLines()
+    local list = GetConnectedStreaks()
+    if #list == 0 then
+        return { "Nobody has played a round in a row yet." }
+    end
+
+    return {
+        "Most rounds in a row: " .. FormatTop(list, "rounds", "minutes", "r"),
+        "Most minutes in a row: " .. FormatTop(list, "minutes", "rounds", "m")
+    }
+end
+
+local function OnFreqPlayers(client)
+    local fromChat = Shine:IsCommandFromChat()
+
+    for _, line in ipairs(SSM_MatchesInARow_GetFreqPlayersLines()) do
+        if not client then
+            Shared.Message(line)
+        elseif fromChat then
+            -- Goes to this client only.
+            Shine:NotifyDualColour(client, 180, 180, 180, "[Matches In A Row]", 255, 255, 255, line)
+        else
+            ServerAdminPrint(client, line)
+        end
+    end
+end
+
+-- Shine is another mod, and the order mods load in is not guaranteed, so this waits until the
+-- server is running rather than looking for Shine when this file loads.
+local commandsRegistered = false
+local function RegisterCommands()
+    commandsRegistered = true
+
+    if not (Shine and Shine.RegisterCommand and Shine.Commands) then
+        return
+    end
+
+    local command = Shine:RegisterCommand("sh_freqplayers", "freqplayers", OnFreqPlayers, true)
+    command:Help("Lists the 5 players with the most rounds in a row and the 5 with the most minutes.")
+end
+
 local function OnUpdateServer()
+    if not commandsRegistered then
+        RegisterCommands()
+    end
+
     local gamerules = GetGamerules()
     if not gamerules then
         return
@@ -215,6 +316,10 @@ local function OnUpdateServer()
             StartRound(gamerules:GetGameStartTime(), now)
         elseif now - lastSampleTime >= 1 then
             Sample(now)
+
+            if now - lastActiveSaveTime >= kActiveSaveSeconds then
+                MarkActive(now)
+            end
         end
     elseif Round then
         -- The round stopped without ending (a reset or a map change mid-round), so nothing counts.
