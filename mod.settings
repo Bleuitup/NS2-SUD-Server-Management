@@ -1,0 +1,16 @@
+name        = "NS2 SUD Server Management"
+source_dir  = "source"
+output_dir  = "output"
+description = [=[[h1]NS2 SUD Server Management[/h1]
+Server tools for the NS2 Sudamerica server. No gameplay changes.
+
+[h1]Matches in a row[/h1]
+[list]
+[*]The scoreboard shows how many rounds in a row each player has played, and for how many minutes, in front of their name: [b][3r, 95m] Bleu[/b]
+[*]When a spectator is waiting for a slot, everyone can see at a glance who has had their turn
+[*]Sit a round out and your count goes back to 0
+[*]Subbing in partway through a round counts as sitting it out, so helping a team never costs you
+[*]Joining a team in the first 2 minutes of a round counts as playing it, even if you step out later
+[*]Counts only change when a round ends. Rounds shorter than 3 minutes don't count
+[/list]
+]=]
