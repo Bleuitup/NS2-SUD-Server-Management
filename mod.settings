@@ -2,7 +2,13 @@ name        = "NS2 SUD Server Admin"
 source_dir  = "source"
 output_dir  = "output"
 description = [=[[h1]NS2 SUD Server Admin[/h1]
-Server tools for the NS2 Sudamerica server. No gameplay changes.
+Server tools for the NS2 Sudamerica server.
+
+This mod is not yet whitelisted.
+
+The scope of this mod is bound to simplify admin workload and ease the experience of the players of NS2 Sudamerica. This mod will never enact gameplay or balance changes of any kind.
+
+The only current feature is consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play.
 
 [h1]Matches in a row[/h1]
 [list]
@@ -11,6 +17,6 @@ Server tools for the NS2 Sudamerica server. No gameplay changes.
 [*]Sit a round out and your count goes back to 0
 [*]Subbing in partway through a round counts as sitting it out, so helping a team never costs you
 [*]Joining a team in the first 2 minutes of a round counts as playing it, even if you step out later
-[*]Counts carry over map changes and start fresh each play session. Rounds shorter than 3 minutes don't count
+[*]Counts carry over map changes and start fresh each play session. Rounds shorter than 1 minute don't add to your round count, but the minutes you played still count
 [/list]
 ]=]

@@ -106,7 +106,7 @@ local function Saved()
     local result = {}
     local data = Files[kDataFile]
     for _, entry in ipairs(data and data.Players or {}) do
-        result[entry.id] = entry.rounds .. "/" .. entry.minutes
+        result[entry.id] = entry.rounds .. "/" .. math.floor(entry.seconds / 60 + 0.5)
     end
     return result
 end
@@ -160,12 +160,18 @@ check(counts[101] == "2/27", "round 2: A keeps the round despite hopping, 2 roun
 check(counts[102] == nil, "round 2: B sat out, back to 0")
 check(counts[103] == "1/20", "round 2: C 1 round 20 min, got " .. tostring(counts[103]))
 
--- Round 3: ends after 2 minutes, void.
+-- Round 3: ends after 50 seconds. No round counts change and nobody is reset, but A's 50 seconds
+-- go on A's minutes (1619 s + 49.5 s = 27.8 min, shown as 28). C sits it out and keeps 1 round;
+-- D plays it with no run and gets no entry.
+C.team, D.team = kSpectatorIndex, kTeam1Index
 StartGame()
-Run(120)
+Run(50)
 Gamerules:EndGame()
 counts = Saved()
-check(counts[101] == "2/27" and counts[103] == "1/20" and Count(counts) == 2, "round 3: a 2-minute round changes nothing")
+check(counts[101] == "2/28", "round 3: short round adds A's time but not a round, got " .. tostring(counts[101]))
+check(counts[103] == "1/20", "round 3: sitting out a short round does not reset C, got " .. tostring(counts[103]))
+check(counts[104] == nil and Count(counts) == 2, "round 3: a short round starts no new run")
+D.team = kSpectatorIndex
 
 -- Round 4: reset mid-round (Started ends without EndGame), nothing counts.
 StartGame()
@@ -173,7 +179,7 @@ Run(600)
 Gamerules.started = false
 Run(5)
 counts = Saved()
-check(counts[101] == "2/27" and counts[103] == "1/20" and Count(counts) == 2, "round 4: a reset round changes nothing")
+check(counts[101] == "2/28" and counts[103] == "1/20" and Count(counts) == 2, "round 4: a reset round changes nothing")
 
 -- Map change: the server Lua restarts and reads the saved counts back.
 LoadServer()
@@ -185,7 +191,7 @@ StartGame()
 Run(600)
 Gamerules:EndGame()
 counts = Saved()
-check(counts[101] == "3/37", "round 5: A 3 rounds 37 min across a map change, got " .. tostring(counts[101]))
+check(counts[101] == "3/38", "round 5: A 3 rounds 38 min across a map change, got " .. tostring(counts[101]))
 check(counts[103] == nil, "round 5: C sat out")
 
 -- A 70-minute round with a restart 65 minutes in: that round is lost, the counts are kept.

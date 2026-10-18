@@ -24,7 +24,9 @@ Nothing is enforced.
 - A round counts when the player was on Marines or Aliens at any moment of its first 2 minutes.
 - Joining later than that is subbing in, and counts as sitting the round out: back to 0.
 - Sitting a round out (spectator, ready room, not connected) puts the count back to 0.
-- Rounds shorter than 3 minutes are void. Counts only change when a round ends.
+- Rounds shorter than 1 minute don't count as a round: no round counts go up and nobody is reset.
+  The time played in them is still added to the minutes of anyone already on a run.
+- Counts only change when a round ends.
 - Counts survive map changes and restarts. After 60 minutes with nobody playing a round they are
   forgotten, so each play session starts fresh.
 
@@ -35,7 +37,7 @@ Nothing is enforced.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `GracePeriodSeconds` | 120 | Being on a team this early in a round counts as playing it |
-| `MinimumRoundSeconds` | 180 | Shorter rounds change nothing |
+| `MinimumRoundSeconds` | 60 | Shorter rounds add minutes but not a round, and reset nobody |
 | `ForgetAfterMinutes` | 60 | Counts are dropped after this long with nobody playing a round |
 
 The counts themselves are kept in `SSM_MatchesInARowData.json` next to it.

@@ -55,7 +55,10 @@ ScoreBoard.
 - Anyone who first joins after the grace period is a **sub, and gets 0**: the round counts as one
   sat out. The author wants subbing in rewarded.
 - Sitting a round out (spectator, ready room, absent) resets to 0.
-- Rounds shorter than `MinimumRoundSeconds` (180) are void: nobody changes.
+- Rounds shorter than `MinimumRoundSeconds` (60, the author's pick: the threshold for skill
+  changes) do not count as a round: no round count goes up and nobody is reset. Their time still
+  counts: it is added to the minutes of anyone already on a run, even if it is under a minute.
+  Time is kept in seconds and only rounded to minutes for display.
 - Minutes are the player's own seconds on a team, summed over the rounds in the count.
 - **Counts only change at round end**, because that is when the server decides who spectates.
 - **Counts last one play session**: kept across map changes and restarts, dropped after

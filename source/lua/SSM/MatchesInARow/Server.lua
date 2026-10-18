@@ -10,8 +10,11 @@
 --   * Anyone who first joins a team after the grace period is a sub. For them the round counts as
 --     a round sat out, so their count goes back to 0. That rewards subbing in.
 --   * Sitting a round out (spectator, ready room or not connected) also puts the count back to 0.
---   * Rounds shorter than MinimumRoundSeconds are void: nobody's count changes.
---   * Minutes are the player's own time on a team, added up over the rounds in the count.
+--   * Rounds shorter than MinimumRoundSeconds do not count as a round: nobody's round count goes
+--     up and nobody is reset. Their time still counts, though: anyone already on a run gets the
+--     time they played added to their minutes.
+--   * Minutes are the player's own time on a team, added up over the rounds in the count. Kept in
+--     seconds and only rounded for display, so a short round adds its partial minute properly.
 --
 -- Counts only change when a round ends, because that is when the server decides who spectates.
 --
@@ -31,7 +34,7 @@ local kDataFile = "SSM_MatchesInARowData.json"
 
 local kDefaultSettings = {
     GracePeriodSeconds = 120,
-    MinimumRoundSeconds = 180,
+    MinimumRoundSeconds = 60,
     ForgetAfterMinutes = 60
 }
 
@@ -51,8 +54,12 @@ if settingsChanged then
     SaveConfigFile(kSettingsFile, Settings)
 end
 
--- [steamId] = { rounds = number, minutes = number }. Only players with a count of 1 or more.
+-- [steamId] = { rounds = number, seconds = number }. Only players with a count of 1 or more.
 local Streaks = {}
+
+local function Minutes(seconds)
+    return math.floor(seconds / 60 + 0.5)
+end
 
 local kActiveSaveSeconds = 300
 
@@ -81,7 +88,7 @@ end
 local function Save()
     local players = {}
     for steamId, streak in pairs(Streaks) do
-        players[#players + 1] = { id = steamId, rounds = streak.rounds, minutes = streak.minutes }
+        players[#players + 1] = { id = steamId, rounds = streak.rounds, seconds = streak.seconds }
     end
 
     SaveConfigFile(kDataFile, { SavedAt = LastActiveAt, Players = players })
@@ -105,8 +112,8 @@ local function Load()
 
     for _, entry in ipairs(data.Players) do
         if type(entry) == "table" and type(entry.id) == "number"
-        and type(entry.rounds) == "number" and type(entry.minutes) == "number" then
-            Streaks[entry.id] = { rounds = entry.rounds, minutes = entry.minutes }
+        and type(entry.rounds) == "number" and type(entry.seconds) == "number" then
+            Streaks[entry.id] = { rounds = entry.rounds, seconds = entry.seconds }
         end
     end
 end
@@ -169,23 +176,27 @@ local function EndRound()
     Round = nil
 
     if now - round.startTime < Settings.MinimumRoundSeconds then
-        return
+        -- Too short to count as a round, so no round counts change and nobody is reset, but the
+        -- time played still goes on the minutes of anyone already on a run.
+        for steamId, streak in pairs(Streaks) do
+            streak.seconds = streak.seconds + (round.seconds[steamId] or 0)
+        end
+    else
+        -- Everyone not in fromStart (subs, spectators, absent players) simply has no entry any
+        -- more, which is what a count of 0 is.
+        local newStreaks = {}
+        for steamId in pairs(round.fromStart) do
+            local previous = Streaks[steamId]
+
+            newStreaks[steamId] = {
+                rounds = (previous and previous.rounds or 0) + 1,
+                seconds = (previous and previous.seconds or 0) + (round.seconds[steamId] or 0)
+            }
+        end
+
+        Streaks = newStreaks
     end
 
-    -- Everyone not in fromStart (subs, spectators, absent players) simply has no entry any more,
-    -- which is what a count of 0 is.
-    local newStreaks = {}
-    for steamId in pairs(round.fromStart) do
-        local previous = Streaks[steamId]
-        local minutes = math.floor((round.seconds[steamId] or 0) / 60 + 0.5)
-
-        newStreaks[steamId] = {
-            rounds = (previous and previous.rounds or 0) + 1,
-            minutes = (previous and previous.minutes or 0) + minutes
-        }
-    end
-
-    Streaks = newStreaks
     LastActiveAt = Shared.GetSystemTime()
 
     Save()
@@ -204,7 +215,7 @@ local function GetConnectedStreaks()
         local streak = steamId and Streaks[steamId]
         if streak and not seen[steamId] then
             seen[steamId] = true
-            list[#list + 1] = { name = player:GetName(), rounds = streak.rounds, minutes = streak.minutes }
+            list[#list + 1] = { name = player:GetName(), rounds = streak.rounds, minutes = Minutes(streak.seconds) }
         end
     end)
 
