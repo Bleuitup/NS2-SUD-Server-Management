@@ -269,13 +269,14 @@ function SSM_MatchesInARow_GetFullStreaksLines()
         return { kNobody }
     end
 
-    local lines = { "Rounds in a row:" }
+    local lines = { "Players sorted by rounds played" }
     Rank(list, "rounds", "minutes")
     for i, entry in ipairs(list) do
         lines[#lines + 1] = string.format("%3d. %s  %dr  %dm", i, entry.name, entry.rounds, entry.minutes)
     end
 
-    lines[#lines + 1] = "Minutes in a row:"
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "Players sorted by minutes played"
     Rank(list, "minutes", "rounds")
     for i, entry in ipairs(list) do
         lines[#lines + 1] = string.format("%3d. %s  %dm  %dr", i, entry.name, entry.minutes, entry.rounds)

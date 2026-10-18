@@ -20,11 +20,12 @@ played over them. Anyone can check:
 - `sud_streaks` in the console lists every player with a count, ranked both ways:
 
   ```
-  Rounds in a row:
+  Players sorted by rounds played
     1. Pepe  4r  140m
     2. Bleu  4r  128m
   ...
-  Minutes in a row:
+
+  Players sorted by minutes played
     1. Pepe  140m  4r
     2. Bleu  128m  4r
   ...
