@@ -1,7 +1,7 @@
 name        = "NS2 SUD Server Admin"
 source_dir  = "source"
 output_dir  = "output"
-description = [=[[h1]NS2 SUD Server Admin[/h1]
+description = "[h1]NS2 SUD Server Admin[/h1]
 Server tools for the NS2 Sudamerica server.
 
 This mod is not yet whitelisted.
@@ -19,8 +19,8 @@ The only current feature is consecutive rounds played and minutes played, to sim
 [*]Joining a team in the first 2 minutes of a round counts as playing it, even if you step out later
 [*]Counts carry over map changes and start fresh each play session. Rounds shorter than 1 minute don't add to your round count, but the minutes you played still count
 [/list]
-]=]
+"
 image       = "preview.jpg"
-tag_modtype = ""
+tag_modtype = "Tool"
 tag_support = "Must be run on Server"
 publish_id = 3822092803
