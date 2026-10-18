@@ -36,7 +36,7 @@ register them in the same order.
 ## Feature: Matches In A Row
 
 Counts rounds in a row and minutes played over them, and shows the top 5 of each through
-`sh_freqplayers` (console) and `!freqplayers` (chat, caller only). Built for a server with no
+`sud_streaks` (console) and `!streaks` (chat, caller only). Built for a server with no
 queue (16 players + 5 spectators) where players hand their slot to a spectator after 3-4 games.
 Information only; never make it enforce anything.
 
@@ -60,6 +60,11 @@ ScoreBoard.
 - **Counts last one play session**: kept across map changes and restarts, dropped after
   `ForgetAfterMinutes` (60) with nobody playing a round. The author confirmed 60 minutes; rounds
   of 70+ minutes do happen, which is why activity is re-saved during rounds.
+- **Command names are the author's pick**: `sud_` prefix for console commands (not Shine's
+  `sh_`), chat command without the prefix. Names like `playerranks` were rejected because they
+  read as skill ranks.
+- **Asked mid-round, the commands show the ranking from the last finished round**, which falls
+  out of counts only changing at round end. The author wants them answering at any time.
 - **The commands are open to everyone**, for transparency. Top 5 by rounds (ties by minutes, then
   name) and top 5 by minutes (ties by rounds, then name), connected players only.
 

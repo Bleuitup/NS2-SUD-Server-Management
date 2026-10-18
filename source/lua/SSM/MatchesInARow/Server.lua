@@ -20,8 +20,8 @@
 -- day's play session starts from scratch. "Playing" is refreshed every kActiveSaveSeconds during a
 -- round, so a server that restarts deep into a 70-minute round still keeps its counts.
 --
--- The counts are only ever shown through two commands, which need Shine: sh_freqplayers
--- (console) and !freqplayers (chat, seen only by whoever typed it) list the 5 connected players
+-- The counts are only ever shown through two commands, which need Shine: sud_streaks
+-- (console) and !streaks (chat, seen only by whoever typed it) list the 5 connected players
 -- with the most rounds in a row and the 5 with the most minutes. Open to everyone, for
 -- transparency. Without Shine the commands simply do not exist. Nothing is sent to clients and
 -- the mod has no client files.
@@ -191,7 +191,7 @@ local function EndRound()
     Save()
 end
 
--- Freq players: top 5 of each list -------------------------------------------------------------
+-- Streaks: top 5 of each list ------------------------------------------------------------------
 
 local kTopCount = 5
 
@@ -231,7 +231,7 @@ local function FormatTop(list, first, second, suffix)
     return table.concat(parts, ", ")
 end
 
-function SSM_MatchesInARow_GetFreqPlayersLines()
+function SSM_MatchesInARow_GetStreaksLines()
     local list = GetConnectedStreaks()
     if #list == 0 then
         return { "Nobody has played a round in a row yet." }
@@ -243,10 +243,10 @@ function SSM_MatchesInARow_GetFreqPlayersLines()
     }
 end
 
-local function OnFreqPlayers(client)
+local function OnStreaks(client)
     local fromChat = Shine:IsCommandFromChat()
 
-    for _, line in ipairs(SSM_MatchesInARow_GetFreqPlayersLines()) do
+    for _, line in ipairs(SSM_MatchesInARow_GetStreaksLines()) do
         if not client then
             Shared.Message(line)
         elseif fromChat then
@@ -268,7 +268,7 @@ local function RegisterCommands()
         return
     end
 
-    local command = Shine:RegisterCommand("sh_freqplayers", "freqplayers", OnFreqPlayers, true)
+    local command = Shine:RegisterCommand("sud_streaks", "streaks", OnStreaks, true)
     command:Help("Lists the 5 players with the most rounds in a row and the 5 with the most minutes.")
 end
 

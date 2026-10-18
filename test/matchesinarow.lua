@@ -113,7 +113,7 @@ end
 
 local function Count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n end
 
-local Lines = function() return SSM_MatchesInARow_GetFreqPlayersLines() end
+local Lines = function() return SSM_MatchesInARow_GetStreaksLines() end
 
 -- ---------------------------------------------------------------------------------------------
 -- Counting
@@ -252,7 +252,7 @@ function ServerAdminPrint(client, text) printed[#printed + 1] = { client = clien
 local caller = Players[1].client
 LoadServer() -- commands register on the first server update once Shine is there
 Hooks.UpdateServer()
-check(registered and registered.con == "sh_freqplayers" and registered.chat == "freqplayers", "commands registered")
+check(registered and registered.con == "sud_streaks" and registered.chat == "streaks", "commands registered")
 check(registered and registered.noPerm == true, "open to everyone")
 registered.fn(caller)
 check(#printed == 2 and printed[1].client == caller, "console: 2 lines to the caller")

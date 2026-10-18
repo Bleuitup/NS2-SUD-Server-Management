@@ -6,7 +6,7 @@ Server tools for the NS2 Sudamerica server. No gameplay changes.
 
 [h1]Matches in a row[/h1]
 [list]
-[*]Type [b]!freqplayers[/b] in chat to see the 5 players with the most rounds in a row and the 5 with the most minutes played over them. Only you see the answer
+[*]Type [b]!streaks[/b] in chat to see the 5 players with the most rounds in a row and the 5 with the most minutes played over them. Only you see the answer
 [*]When a spectator is waiting for a slot, anyone can check who has had their turn
 [*]Sit a round out and your count goes back to 0
 [*]Subbing in partway through a round counts as sitting it out, so helping a team never costs you

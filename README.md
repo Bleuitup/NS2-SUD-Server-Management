@@ -9,8 +9,8 @@ Built for a server with no queue, where players hand their slot to a waiting spe
 games. The server counts how many rounds in a row each player has played and how many minutes they
 played over them. Anyone can check the top of both lists:
 
-- `!freqplayers` in chat (the answer is only shown to whoever typed it)
-- `sh_freqplayers` in the console
+- `!streaks` in chat (the answer is only shown to whoever typed it)
+- `sud_streaks` in the console
 
 ```
 Most rounds in a row: Bleu 4r, Pepe 4r, Juan 3r, Ana 3r, Leo 2r
