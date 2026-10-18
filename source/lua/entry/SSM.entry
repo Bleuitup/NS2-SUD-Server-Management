@@ -1,7 +1,4 @@
 modEntry = {
-    FileHooks = "lua/SSM/FileHooks.lua",
-    Shared = "lua/SSM/Shared.lua",
     Server = "lua/SSM/Server.lua",
-    Client = "lua/SSM/Client.lua",
     Priority = 10
 }

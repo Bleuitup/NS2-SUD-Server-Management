@@ -1,7 +1,7 @@
 -- Matches In A Row - server side.
 --
--- Counts how many rounds in a row each player has played, and for how many minutes, so everyone
--- can see who has had their turn when a spectator is waiting for a slot.
+-- Counts how many rounds in a row each player has played, and for how many minutes, so anyone
+-- can check who has had their turn when a spectator is waiting for a slot.
 --
 -- Rules:
 --   * A round counts for a player when they were on Marines or Aliens at any moment of its first
@@ -20,9 +20,11 @@
 -- day's play session starts from scratch. "Playing" is refreshed every kActiveSaveSeconds during a
 -- round, so a server that restarts deep into a 70-minute round still keeps its counts.
 --
--- With Shine loaded, sh_freqplayers (console) and !freqplayers (chat, seen only by whoever typed
--- it) list the 5 connected players with the most rounds in a row and the 5 with the most minutes.
--- Open to everyone, for transparency. Without Shine the commands simply do not exist.
+-- The counts are only ever shown through two commands, which need Shine: sh_freqplayers
+-- (console) and !freqplayers (chat, seen only by whoever typed it) list the 5 connected players
+-- with the most rounds in a row and the 5 with the most minutes. Open to everyone, for
+-- transparency. Without Shine the commands simply do not exist. Nothing is sent to clients and
+-- the mod has no client files.
 
 local kSettingsFile = "SSM_MatchesInARow.json"
 local kDataFile = "SSM_MatchesInARowData.json"
@@ -71,33 +73,6 @@ local function GetSteamId(player)
         if steamId and steamId > 0 then
             return steamId
         end
-    end
-end
-
-local function SendStreak(client, steamId, streak)
-    local message = {
-        steamId = steamId,
-        rounds = math.min(streak.rounds, 255),
-        minutes = math.min(streak.minutes, 4095)
-    }
-
-    if client then
-        Server.SendNetworkMessage(client, "SSM_MatchesInARow", message, true)
-    else
-        Server.SendNetworkMessage("SSM_MatchesInARow", message, true)
-    end
-end
-
--- Sends the whole list, to one client or (with nil) to everyone.
-local function SendAll(client)
-    if client then
-        Server.SendNetworkMessage(client, "SSM_MatchesInARowClear", {}, true)
-    else
-        Server.SendNetworkMessage("SSM_MatchesInARowClear", {}, true)
-    end
-
-    for steamId, streak in pairs(Streaks) do
-        SendStreak(client, steamId, streak)
     end
 end
 
@@ -174,9 +149,8 @@ local function StartRound(startTime, now)
 
     -- The server can sit on one map for hours with nobody playing, so the age check on load is
     -- not enough on its own.
-    if IsForgotten() and next(Streaks) then
+    if IsForgotten() then
         Streaks = {}
-        SendAll(nil)
     end
 
     MarkActive(now)
@@ -215,7 +189,6 @@ local function EndRound()
     LastActiveAt = Shared.GetSystemTime()
 
     Save()
-    SendAll(nil)
 end
 
 -- Freq players: top 5 of each list -------------------------------------------------------------
@@ -327,12 +300,6 @@ local function OnUpdateServer()
     end
 end
 
-local function OnClientConnect(client)
-    if client and not client:GetIsVirtual() then
-        SendAll(client)
-    end
-end
-
 local oldEndGame
 oldEndGame = Class_ReplaceMethod("NS2Gamerules", "EndGame", function(self, ...)
     oldEndGame(self, ...)
@@ -340,6 +307,5 @@ oldEndGame = Class_ReplaceMethod("NS2Gamerules", "EndGame", function(self, ...)
 end)
 
 Event.Hook("UpdateServer", OnUpdateServer)
-Event.Hook("ClientConnect", OnClientConnect)
 
 Load()

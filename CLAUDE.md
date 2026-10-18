@@ -17,8 +17,8 @@ NS2 Launch Pad layout, matching the author's other mods:
 
 ```
 mod.settings                       Workshop metadata and description (never put a backslash in it)
-source/lua/entry/SSM.entry         FileHooks + Shared/Server/Client entry scripts
-source/lua/SSM/{FileHooks,Shared,Server,Client}.lua   load each feature's files
+source/lua/entry/SSM.entry         entry: Server script only, for now
+source/lua/SSM/Server.lua          loads each feature's server file
 source/lua/SSM/<Feature>/...       one folder per feature
 test/matchesinarow.lua             logic test, runs outside the game
 output/                            Launch Pad build output, gitignored
@@ -28,16 +28,23 @@ Build before publishing (no compile step): `rm -rf output && mkdir -p output && 
 Launch Pad rewrites `mod.settings` on publish, and creates `preview.jpg` and `publish_id` on the
 first publish.
 
-New features get their own folder under `lua/SSM/` and one line in each loader they need.
-Network messages are registered from `SSM/Shared.lua` only, so server and client register the
-same messages in the same order.
+New features get their own folder under `lua/SSM/` and a line in `SSM/Server.lua`. A feature that
+needs client code or network messages adds `Client` / `Shared` (and `FileHooks` if needed) back to
+the entry with matching loaders; network messages belong in a Shared script so server and client
+register them in the same order.
 
 ## Feature: Matches In A Row
 
-Shows `[3r 95m] Name` on the scoreboard (tag in light gray, no comma - the author's format):
-rounds in a row and minutes played over them. Built for
-a server with no queue (16 players + 5 spectators) where players hand their slot to a spectator
-after 3-4 games. The tag only informs; never make it enforce anything.
+Counts rounds in a row and minutes played over them, and shows the top 5 of each through
+`sh_freqplayers` (console) and `!freqplayers` (chat, caller only). Built for a server with no
+queue (16 players + 5 spectators) where players hand their slot to a spectator after 3-4 games.
+Information only; never make it enforce anything.
+
+**History:** v1 showed a `[3r 95m]` tag in front of names on the scoreboard. After feedback from
+fellow admin LZZ the author scrapped the scoreboard entirely (2026-10-18), keeping only the
+commands. Do not bring the tag back without being asked. The scoreboard code is in git history
+(`6a4a488`) if it is ever wanted again, including how it coexisted with Devnull's Enhanced
+ScoreBoard.
 
 ### Rules (agreed with the author, do not change without asking)
 
@@ -49,18 +56,14 @@ after 3-4 games. The tag only informs; never make it enforce anything.
 - Sitting a round out (spectator, ready room, absent) resets to 0.
 - Rounds shorter than `MinimumRoundSeconds` (180) are void: nobody changes.
 - Minutes are the player's own seconds on a team, summed over the rounds in the count.
-- **Counts and minutes only change at round end**, because that is when the server decides who
-  spectates. The author explicitly does not want live-updating minutes.
-- **The tag is hidden while a round is played** (`kGameState.Started`) and shown in the pregame
-  states and after a round ends. Purely client side; the counts are unaffected.
+- **Counts only change at round end**, because that is when the server decides who spectates.
 - **Counts last one play session**: kept across map changes and restarts, dropped after
   `ForgetAfterMinutes` (60) with nobody playing a round. The author confirmed 60 minutes; rounds
-  of 70+ minutes do happen, which is why activity is re-saved during rounds (see Server).
-- **`sh_freqplayers` / `!freqplayers` are open to everyone**, for transparency. They rank the
-  same in-a-row numbers the tags show: top 5 by rounds (ties by minutes, then name) and top 5 by
-  minutes (ties by rounds, then name), connected players only. Chat output goes to the caller only.
+  of 70+ minutes do happen, which is why activity is re-saved during rounds.
+- **The commands are open to everyone**, for transparency. Top 5 by rounds (ties by minutes, then
+  name) and top 5 by minutes (ties by rounds, then name), connected players only.
 
-### Server (`Server.lua`)
+### How it works (`MatchesInARow/Server.lua`)
 
 - Samples once a second from `Event.Hook("UpdateServer")`: who is on team 1/2, keyed by Steam ID
   (`client:GetUserId()`), bots skipped. Its own bookkeeping rather than `ScoringMixin` play
@@ -72,59 +75,32 @@ after 3-4 games. The tag only informs; never make it enforce anything.
   the start; everyone else simply has no entry, which is what 0 is.
 - The server Lua restarts on every map change, so counts are saved to
   `config://SSM_MatchesInARowData.json` (a list, because JSON object keys come back as strings)
-  and loaded at startup. `ForgetAfterMinutes` (60) is checked on load **and** at round start: the
-  server can sit idle on one map for hours. It is measured from `LastActiveAt`, which is set and
-  saved at round start, every `kActiveSaveSeconds` (300) during a round, and at round end, so a
-  restart 65 minutes into a 70-minute round still keeps the counts.
+  and loaded at startup. `ForgetAfterMinutes` is checked on load **and** at round start (the
+  server can sit idle on one map for hours), measured from `LastActiveAt`. That is set and saved
+  at round start, every `kActiveSaveSeconds` (300) during a round, and at round end, so a restart
+  65 minutes into a 70-minute round still keeps the counts.
 - Commands go through Shine when it is loaded (`Shine:RegisterCommand`, `NoPerm = true`),
   registered on the first `UpdateServer` rather than at file load, because load order between
   mods is not guaranteed - the same opportunistic pattern Hive Spawn Selector uses for
   CustomSpawns. Not a Shine plugin. `Shine:IsCommandFromChat()` picks chat
-  (`NotifyDualColour`, caller only) or console (`ServerAdminPrint`). Without Shine there are no
-  commands.
-- Sends `SSM_MatchesInARowClear` then one `SSM_MatchesInARow` per player with a count, to
-  everyone at round end and to each client on `ClientConnect`.
-
-### Client (`Client.lua`, `GUIScoreboard.lua`)
-
-- **The tag is put into the name inside a copy of the score records the scoreboard reads, then
-  split back off into its own gray text item after `UpdateTeam`.** Each
-  `self.teams[i].GetScores` is wrapped after `GUIScoreboard:Initialize`. The scoreboard then lays
-  out and shortens the tagged name like any long name, so vanilla's and Devnull's truncation both
-  keep working. Adding text to the name item afterwards would overflow into the icons, because
-  both scoreboards shorten names from the item's text during `UpdateTeam`. The cached records
-  are never modified.
-- The split (`SplitTags`): if the name item's text starts with the row's tag, a text item made
-  like the name item (`row.SSMTag`, child of `row.Background`) gets the tag at the name's
-  position, and the name gets the rest, moved right by the tag's width. Both scoreboards set the
-  name's text and position on every pass, so the move never accumulates. Every row is touched
-  every pass because rows are pooled and recycled. A name so long that shortening it cut into
-  the tag keeps the tag inline, in the name's color.
-- **`lua/GUIScoreboard.lua` is reached with a post file hook, never replace.** Devnull's Enhanced
-  ScoreBoard (on the live server) replaces that file; a post hook runs after whichever version
-  loaded. Only methods both versions have are wrapped (`Initialize`, `UpdateTeam`).
-- Two places compare names, and both get the real name back through a tagged-to-real map:
-  `ScoreboardUI_IsPlayerLocal` (local row highlight, wrapped in `Client.lua`) and Enhanced
-  ScoreBoard's commander name in the team header (`TeamInfo.teamComm`, fixed after
-  `UpdateTeam`). The map is never cleared, because Enhanced ScoreBoard keeps the last commander's
-  name across rounds.
-- Lifeform Picker also draws on the scoreboard; it reads `ClientIndex`, not names, so tagging does
-  not affect it.
+  (`NotifyDualColour`, caller only) or console (`ServerAdminPrint`; `Shared.Message` from the
+  server console). Without Shine there are no commands.
 
 ## Testing
 
 - `luac -p` every file (Lua 5.4 at `C:\Users\maost\AppData\Local\Programs\Lua\bin\`; NS2 runs
   LuaJIT/5.1, so this proves parsing only).
-- `lua test/matchesinarow.lua` from the repo root runs the real files against stubbed globals:
-  counting rules, saving and loading, expiry, the long-round restart, the commands, tagging,
-  hiding during rounds, the gray tag split, highlight and commander header.
-- Everything visual has to be checked in game through Launch Pad. No test-only console commands.
+- `lua test/matchesinarow.lua` from the repo root runs the real server file against stubbed
+  globals: counting rules, void and reset rounds, saving and loading, expiry, the long-round
+  restart, top-5 limits and the commands.
+- Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
+  test-only console commands.
 
 ## Whitelisting
 
-**Not whitelisted.** A non-whitelisted mod on the live server makes it unranked and switches off
-consistency checking, which lets some players' client mods desync and drop them. Until UWE
-whitelists it, test locally.
+**Not whitelisted yet**; the author plans to apply soon. A non-whitelisted mod on the live server
+makes it unranked and switches off consistency checking, which lets some players' client mods
+desync and drop them. Until then, test locally.
 
 ## Versioning
 
