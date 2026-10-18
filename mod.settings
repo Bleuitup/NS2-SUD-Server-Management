@@ -20,3 +20,6 @@ The only current feature is consecutive rounds played and minutes played, to sim
 [*]Counts carry over map changes and start fresh each play session. Rounds shorter than 1 minute don't add to your round count, but the minutes you played still count
 [/list]
 ]=]
+image       = "preview.jpg"
+tag_modtype = ""
+tag_support = "Must be run on Server"
