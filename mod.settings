@@ -1,7 +1,7 @@
-name        = "NS2 SUD Server Management"
+name        = "NS2 SUD Server Admin"
 source_dir  = "source"
 output_dir  = "output"
-description = [=[[h1]NS2 SUD Server Management[/h1]
+description = [=[[h1]NS2 SUD Server Admin[/h1]
 Server tools for the NS2 Sudamerica server. No gameplay changes.
 
 [h1]Matches in a row[/h1]

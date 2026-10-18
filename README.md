@@ -1,4 +1,4 @@
-# NS2 SUD Server Management
+# NS2 SUD Server Admin
 
 Server administration quality of life for the NS2 Sudamerica server. No gameplay changes.
 Server side only: none of its code runs on players' machines.

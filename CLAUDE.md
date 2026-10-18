@@ -4,7 +4,7 @@ Guidance for AI assistants and contributors working in this repository.
 
 ## What this is
 
-**NS2 SUD Server Management (SSM)** is a standalone Natural Selection 2 mod for administrative
+**NS2 SUD Server Admin (SSM; the GitHub repo is still named NS2-SUD-Server-Management)** is a standalone Natural Selection 2 mod for administrative
 quality of life on the NS2 Sudamerica server. **No gameplay changes, ever.** It is deliberately
 not a Shine extension: the author finds standalone mods easier to debug.
 
@@ -17,6 +17,7 @@ NS2 Launch Pad layout, matching the author's other mods:
 
 ```
 mod.settings                       Workshop metadata and description (never put a backslash in it)
+preview.jpg                        Workshop preview, 1024x1024 (made by the author with GPT)
 source/lua/entry/SSM.entry         entry: Server script only, for now
 source/lua/SSM/Server.lua          loads each feature's server file
 source/lua/SSM/<Feature>/...       one folder per feature
@@ -25,7 +26,7 @@ output/                            Launch Pad build output, gitignored
 ```
 
 Build before publishing (no compile step): `rm -rf output && mkdir -p output && cp -r source/. output/`.
-Launch Pad rewrites `mod.settings` on publish, and creates `preview.jpg` and `publish_id` on the
+Launch Pad rewrites `mod.settings` on publish, and adds `publish_id` on the
 first publish.
 
 New features get their own folder under `lua/SSM/` and a line in `SSM/Server.lua`. A feature that
