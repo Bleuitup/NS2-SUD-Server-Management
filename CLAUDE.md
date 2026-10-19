@@ -39,8 +39,8 @@ register them in the same order.
 ## Feature: Matches In A Row
 
 Counts rounds in a row and minutes played over them. `sud_streaks` (console) lists every
-connected player with a count, ranked by rounds and by minutes; `!streaks` (chat, caller only)
-gives the top 3 of each. Built for a server with no
+connected player with a count, ranked by rounds and by minutes; `!streakr` and `!streakm` (chat,
+caller only) give the top 5 by rounds and by minutes. Built for a server with no
 queue (16 players + 5 spectators) where players hand their slot to a spectator after 3-4 games.
 Information only; never make it enforce anything.
 
@@ -62,7 +62,10 @@ ScoreBoard.
   changes) do not count as a round: no round count goes up and nobody is reset. Their time still
   counts: it is added to the minutes of anyone already on a run, even if it is under a minute.
   Time is kept in seconds and only rounded to minutes for display.
-- Minutes are the player's own seconds on a team, summed over the rounds in the count.
+- Minutes are the player's own seconds on a team, summed over the rounds in the count. They are
+  **not a tiebreak in the author's eyes**: with few games a night, equal rounds usually mean equal
+  play, and minutes are what show a very short outlier round. (Ranking ties are still broken by
+  the other value.)
 - **Counts only change at round end**, because that is when the server decides who spectates.
 - **Counts last one play session**: kept across map changes and restarts, dropped after
   `ForgetAfterMinutes` (60) with nobody playing a round. The author confirmed 60 minutes; rounds
@@ -75,12 +78,13 @@ ScoreBoard.
 - **The commands are open to everyone**, for transparency. Ranked by rounds (ties by minutes,
   then name) and by minutes (ties by rounds, then name), connected players with a count only.
   **The console gets the full list** (the author: the console has room for all 16 players), one
-  player per line; **chat gets the top 3 of each, one player per chat line** (the author's pick
-  over one combined list, 1.0b), because chat is small. Each list shows only the value it is
+  player per line. **Chat has one command per ranking** (1.0b, the author's pick, to save chat
+  space): `!streakr` = top 5 by rounds, `!streakm` = top 5 by minutes, one player per chat line,
+  because chat is small. `!streaks` was dropped before anyone used it. Each list shows only the value it is
   sorted by. Headers read "Players sorted by rounds played" / "... minutes played" (author's
   wording). Before any round, both commands answer the caller with one line instead.
 - **The commands make no noise for others** (1.0b): no Shine admin-log line, and the typed
-  `!streaks` is dropped from public chat.
+  chat command is dropped from public chat.
 - **Every chat message from the mod uses the `[NS2 SUD]` tag in magenta** (`SSM.Notify` in
   `Messages.lua`), the same magenta as Hive Spawn Selector's tag. One voice for all features;
   headers carry the tag, rows under them do not.
@@ -105,12 +109,17 @@ ScoreBoard.
   "X ran command ..." to every client with `sh_seelogechos` after each command, and there is no
   flag to stop it. `sud_streaks` is a plain game console command
   (`Event.Hook("Console_sud_streaks")`, works without Shine, prints with `ServerAdminPrint`, or
-  `Shared.Message` from the server console). `!streaks` / `/streaks` are caught with
+  `Shared.Message` from the server console). `!streakr` / `!streakm` (and with `/`) are caught with
   `Shine.Hook.Add("PlayerSay", ...)` - not a Shine plugin - which answers through `SSM.Notify` and
   returns `""` so the typed message is dropped. The hook is added on the first `UpdateServer`,
   because load order between mods is not guaranteed - the same opportunistic pattern Hive Spawn
   Selector uses for CustomSpawns. Chat lines are separate messages because a single chat message
   cannot hold line breaks.
+
+## Planned (author's ideas, not built yet)
+
+- Reminder messages so players learn the commands.
+- A `!help`-style command listing the mod's commands, printed to the console once there are many.
 
 ## Testing
 

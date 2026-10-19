@@ -231,24 +231,32 @@ StartGame() Run(900) Gamerules:EndGame()
 -- then to the name.
 StartGame() Run(60) B.team = kSpectatorIndex Run(240) Gamerules:EndGame()
 
--- Chat: two top-3 lists, each row showing only the value it is sorted by.
+-- Chat: one ranking per command, each row showing only the value it is sorted by.
 local function ChatText(lines)
     local out = {}
     for i, line in ipairs(lines) do out[i] = (line[2] and "> " or "") .. line[1] end
     return table.concat(out, "\n")
 end
-local chat = SSM_MatchesInARow_GetChatLines()
+local chat = SSM_MatchesInARow_GetChatLines("rounds")
 check(ChatText(chat) == table.concat({
-    "Players sorted by rounds played", "> 1. P101  3r", "> 2. P103  3r", "> 3. P102  3r",
+    "Players sorted by rounds played", "> 1. P101  3r", "> 2. P103  3r", "> 3. P102  3r" }, "\n"),
+    "chat rounds ranking, got:\n" .. ChatText(chat))
+chat = SSM_MatchesInARow_GetChatLines("minutes")
+check(ChatText(chat) == table.concat({
     "Players sorted by minutes played", "> 1. P101  30m", "> 2. P103  30m", "> 3. P102  26m" }, "\n"),
-    "chat rankings, got:\n" .. ChatText(chat))
+    "chat minutes ranking, got:\n" .. ChatText(chat))
 
--- Only the top 3 in chat, and only connected players anywhere.
+-- Only the top 5 in chat, and only connected players anywhere.
 for id = 201, 207 do AddPlayer(id, kTeam1Index) end
 StartGame() Run(600) Gamerules:EndGame()
 table.remove(Players) -- 207 disconnects
-chat = SSM_MatchesInARow_GetChatLines()
-check(#chat == 8, "chat: 2 headers + 3 rows each, got " .. #chat)
+chat = SSM_MatchesInARow_GetChatLines("rounds")
+check(ChatText(chat) == table.concat({
+    "Players sorted by rounds played", "> 1. P101  4r", "> 2. P103  4r",
+    "> 3. P201  1r", "> 4. P202  1r", "> 5. P203  1r" }, "\n"),
+    "chat: header + top 5 by rounds, got:\n" .. ChatText(chat))
+chat = SSM_MatchesInARow_GetChatLines("minutes")
+check(#chat == 6 and chat[2][1] == "1. P101  40m" and chat[6][1] == "5. P203  10m", "chat: header + top 5 by minutes")
 check(not ChatText(chat):find("P207"), "disconnected players are not listed")
 
 -- The console gets everyone with a count: A and C (4 rounds, 30 + 10 min) and 201-206 (1 round,
@@ -283,12 +291,17 @@ Hooks["Console_sud_streaks"](caller)
 check(#printed == 19 and printed[1].client == caller and printed[2].client == caller, "console: the full list to the caller only, got " .. #printed)
 
 check(onSay(caller, { message = "hello" }) == nil and #notified == 0, "ordinary chat is left alone")
-check(onSay(caller, { message = "  !Streaks " }) == "", "!streaks is answered and hidden from chat")
-check(#notified == 8, "chat: 8 lines, got " .. #notified)
-check(notified[1].client == caller and notified[8].client == caller, "chat goes to the caller only")
-check(notified[1].prefix == "[NS2 SUD]" and notified[1].color == "255,0,255", "headers carry the magenta [NS2 SUD] tag")
+check(onSay(caller, { message = "!streaks" }) == nil and #notified == 0, "!streaks is no longer a command")
+check(onSay(caller, { message = "  !StreakR " }) == "", "!streakr is answered and hidden from chat")
+check(#notified == 6, "!streakr: 6 lines, got " .. #notified)
+check(notified[1].text == "Players sorted by rounds played", "!streakr shows the rounds ranking")
+check(notified[1].client == caller and notified[6].client == caller, "chat goes to the caller only")
+check(notified[1].prefix == "[NS2 SUD]" and notified[1].color == "255,0,255", "the header carries the magenta [NS2 SUD] tag")
 check(notified[2].prefix == "" and notified[2].text == "1. P101  4r", "rows continue under the header, got " .. tostring(notified[2].text))
-check(onSay(caller, { message = "/streaks" }) == "", "/streaks works too")
+notified = {}
+check(onSay(caller, { message = "/streakm" }) == "", "/streakm works too")
+check(#notified == 6 and notified[1].text == "Players sorted by minutes played" and notified[2].text == "1. P101  40m",
+    "!streakm shows the minutes ranking, got " .. tostring(notified[2] and notified[2].text))
 
 -- Before any round: one line, to the caller only, in both places.
 Now = Now + 7200
@@ -297,7 +310,7 @@ notified, printed = {}, {}
 Hooks["Console_sud_streaks"](caller)
 check(#printed == 1 and printed[1].text == kNobody, "console before any round: one line")
 Hooks.UpdateServer()
-sayHooks["PlayerSay:SSM_MatchesInARow"](caller, { message = "!streaks" })
+sayHooks["PlayerSay:SSM_MatchesInARow"](caller, { message = "!streakm" })
 check(#notified == 1 and notified[1].text == kNobody and notified[1].prefix == "[NS2 SUD]", "chat before any round: one tagged line")
 Shine = nil
 

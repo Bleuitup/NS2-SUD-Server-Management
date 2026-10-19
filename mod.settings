@@ -12,7 +12,7 @@ The only current feature is consecutive rounds played and minutes played, to sim
 
 [h1]Matches in a row[/h1]
 [list]
-[*]Type [b]!streaks[/b] in chat to see the 3 players with the most rounds in a row and the 3 with the most minutes played over them. Only you see the answer
+[*]Type [b]!streakr[/b] in chat to see the top 5 players by rounds in a row, or [b]!streakm[/b] for the top 5 by minutes played over them. Only you see the answer
 [*]Type [b]sud_streaks[/b] in the console for the full list of every player, ranked by rounds and by minutes
 [*]When a spectator is waiting for a slot, anyone can check who has had their turn
 [*]Sit a round out and your count goes back to 0

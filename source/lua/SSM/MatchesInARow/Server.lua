@@ -23,11 +23,11 @@
 -- day's play session starts from scratch. "Playing" is refreshed every kActiveSaveSeconds during a
 -- round, so a server that restarts deep into a 70-minute round still keeps its counts.
 --
--- The counts are only ever shown through two commands, open to everyone for transparency:
+-- The counts are only ever shown through commands, open to everyone for transparency:
 -- sud_streaks (console) lists every connected player with a count, ranked by rounds and by
--- minutes; !streaks (chat, seen only by whoever typed it) gives the top 3 of each. The console
--- command needs nothing else; the chat command needs Shine. Nothing else is sent to clients and
--- the mod has no client files.
+-- minutes; !streakr and !streakm (chat, seen only by whoever typed it) give the top 5 by rounds
+-- and by minutes. The console command needs nothing else; the chat commands need Shine.
+-- Nothing else is sent to clients and the mod has no client files.
 
 local kSettingsFile = "SSM_MatchesInARow.json"
 local kDataFile = "SSM_MatchesInARowData.json"
@@ -204,8 +204,21 @@ end
 
 -- Streaks: the two rankings ------------------------------------------------------------------
 
--- Chat has little room, so it gets the top 3 of each list; the console gets everyone.
-local kChatCount = 3
+-- Chat has little room, so each chat command shows one ranking, top 5; the console gets
+-- everyone, both ways.
+local kChatCount = 5
+
+-- The two rankings. Each shows only the value it is sorted by.
+local kRankings = {
+    rounds = { header = "Players sorted by rounds played", first = "rounds", second = "minutes", suffix = "r" },
+    minutes = { header = "Players sorted by minutes played", first = "minutes", second = "rounds", suffix = "m" }
+}
+
+-- Chat commands and the ranking each one shows.
+local kChatCommands = {
+    ["!streakr"] = "rounds", ["/streakr"] = "rounds",
+    ["!streakm"] = "minutes", ["/streakm"] = "minutes"
+}
 
 -- Connected players with a count, as { name, rounds, minutes }.
 local function GetConnectedStreaks()
@@ -238,37 +251,37 @@ local function Rank(list, first, second)
     end)
 end
 
--- Both rankings as { text, isListRow } pairs, `count` players each (nil for everyone). Each list
--- shows only the value it is sorted by.
-local function BuildRankings(count)
+-- The named rankings as { text, isListRow } pairs, `count` players each (nil for everyone).
+local function BuildRankings(kinds, count)
     local list = GetConnectedStreaks()
     if #list == 0 then
         return { { kNobody } }
     end
 
     local lines = {}
-    local function AddList(header, first, second, suffix)
-        lines[#lines + 1] = { header }
-        Rank(list, first, second)
+    for _, kind in ipairs(kinds) do
+        local ranking = kRankings[kind]
+        lines[#lines + 1] = { ranking.header }
+        Rank(list, ranking.first, ranking.second)
         for i = 1, math.min(count or #list, #list) do
-            lines[#lines + 1] = { string.format("%d. %s  %d%s", i, list[i].name, list[i][first], suffix), true }
+            local entry = list[i]
+            lines[#lines + 1] = { string.format("%d. %s  %d%s", i, entry.name, entry[ranking.first], ranking.suffix), true }
         end
     end
 
-    AddList("Players sorted by rounds played", "rounds", "minutes", "r")
-    AddList("Players sorted by minutes played", "minutes", "rounds", "m")
     return lines
 end
 
--- For chat: the headers carry the [NS2 SUD] tag, the player rows continue under them.
-function SSM_MatchesInARow_GetChatLines()
-    return BuildRankings(kChatCount)
+-- For chat, one ranking ("rounds" or "minutes"): the header carries the [NS2 SUD] tag, the
+-- player rows continue under it.
+function SSM_MatchesInARow_GetChatLines(kind)
+    return BuildRankings({ kind }, kChatCount)
 end
 
--- For the console: everyone, indented under the headers, a blank line between the lists.
+-- For the console: everyone, both rankings, indented under the headers, a blank line between.
 function SSM_MatchesInARow_GetConsoleLines()
     local lines = {}
-    for i, line in ipairs(BuildRankings(nil)) do
+    for i, line in ipairs(BuildRankings({ "rounds", "minutes" }, nil)) do
         if not line[2] and i > 1 then
             lines[#lines + 1] = ""
         end
@@ -285,20 +298,20 @@ local function OnConsoleStreaks(client)
     end
 end
 
--- !streaks (or /streaks) in chat, answered to that player only. Returning "" drops the typed
--- message, so nobody else sees the command either.
+-- !streakr / !streakm (or with /) in chat, answered to that player only. Returning "" drops the
+-- typed message, so nobody else sees the command either.
 local function OnPlayerSay(client, message)
     local text = message and message.message
     if type(text) ~= "string" then
         return
     end
 
-    local command = string.lower(text:match("^%s*(.-)%s*$"))
-    if command ~= "!streaks" and command ~= "/streaks" then
+    local kind = kChatCommands[string.lower(text:match("^%s*(.-)%s*$"))]
+    if not kind then
         return
     end
 
-    for _, line in ipairs(SSM_MatchesInARow_GetChatLines()) do
+    for _, line in ipairs(SSM_MatchesInARow_GetChatLines(kind)) do
         SSM.Notify(client, line[1], line[2])
     end
 
