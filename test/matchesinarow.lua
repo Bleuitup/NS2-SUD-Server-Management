@@ -4,6 +4,7 @@
 -- Stubs only the few engine, vanilla and Shine globals the file touches. Proves the counting
 -- rules and the commands; it says nothing about how they behave on a real server.
 
+local kMessagesFile = "source/lua/SSM/Messages.lua"
 local kServerFile = "source/lua/SSM/MatchesInARow/Server.lua"
 local kDataFile = "SSM_MatchesInARowData.json"
 
@@ -98,6 +99,7 @@ end
 local function LoadServer()
     Hooks = {}
     NS2Gamerules = { EndGame = function() Gamerules.started = false end }
+    dofile(kMessagesFile)
     dofile(kServerFile)
 end
 
@@ -113,14 +115,16 @@ end
 
 local function Count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n end
 
-local Lines = function() return SSM_MatchesInARow_GetStreaksLines() end
+-- What sud_streaks prints in the console.
+local Lines = function() return SSM_MatchesInARow_GetConsoleLines() end
+local kNobody = "No rounds have been counted yet this session."
 
 -- ---------------------------------------------------------------------------------------------
 -- Counting
 
 LoadServer()
 check(Files["SSM_MatchesInARow.json"].GracePeriodSeconds == 120, "default settings file written")
-check(Lines()[1] == "Nobody has played a round in a row yet.", "empty list message")
+check(#Lines() == 1 and Lines()[1] == kNobody, "before any round: one line saying so")
 
 local A = AddPlayer(101, kTeam1Index)
 local B = AddPlayer(102, kTeam2Index)
@@ -183,7 +187,7 @@ check(counts[101] == "2/28" and counts[103] == "1/20" and Count(counts) == 2, "r
 
 -- Map change: the server Lua restarts and reads the saved counts back.
 LoadServer()
-check(Lines()[1] == "Most rounds in a row: P101 2r, P103 1r", "after map change the counts are still there, got " .. Lines()[1])
+check(Lines()[2] == "  1. P101  2r" and Lines()[3] == "  2. P103  1r", "after map change the counts are still there, got " .. tostring(Lines()[2]))
 
 -- Round 5 on the new map: A continues, C sits out.
 C.team = kSpectatorIndex
@@ -199,7 +203,7 @@ StartGame()
 Run(65 * 60)
 check(Files[kDataFile].SavedAt >= SystemStart + math.floor(Now) - 300, "activity was saved during the long round")
 LoadServer()
-check(Lines()[1] == "Most rounds in a row: P101 3r", "restart 65 minutes into a round keeps the counts, got " .. Lines()[1])
+check(Lines()[2] == "  1. P101  3r" and #Lines() == 5, "restart 65 minutes into a round keeps the counts, got " .. tostring(Lines()[2]))
 
 -- Server left alone for 2 hours on the same map: the next round starts from scratch.
 Now = Now + 7200
@@ -214,7 +218,7 @@ check(counts[101] == "1/10", "after 2 idle hours A starts again at 1, got " .. t
 -- Saved counts older than an hour are dropped on load.
 Now = Now + 3700
 LoadServer()
-check(Lines()[1] == "Nobody has played a round in a row yet.", "stale save is dropped on load")
+check(Lines()[1] == kNobody, "stale save is dropped on load")
 
 -- ---------------------------------------------------------------------------------------------
 -- Commands
@@ -227,56 +231,74 @@ StartGame() Run(900) Gamerules:EndGame()
 -- then to the name.
 StartGame() Run(60) B.team = kSpectatorIndex Run(240) Gamerules:EndGame()
 
-local lines = Lines()
-check(lines[1] == "Most rounds in a row: P101 3r, P103 3r, P102 3r", "rounds list, got " .. tostring(lines[1]))
-check(lines[2] == "Most minutes in a row: P101 30m, P103 30m, P102 26m", "minutes list, got " .. tostring(lines[2]))
+-- Chat: two top-3 lists, each row showing only the value it is sorted by.
+local function ChatText(lines)
+    local out = {}
+    for i, line in ipairs(lines) do out[i] = (line[2] and "> " or "") .. line[1] end
+    return table.concat(out, "\n")
+end
+local chat = SSM_MatchesInARow_GetChatLines()
+check(ChatText(chat) == table.concat({
+    "Players sorted by rounds played", "> 1. P101  3r", "> 2. P103  3r", "> 3. P102  3r",
+    "Players sorted by minutes played", "> 1. P101  30m", "> 2. P103  30m", "> 3. P102  26m" }, "\n"),
+    "chat rankings, got:\n" .. ChatText(chat))
 
--- Only the top 5, and only connected players.
+-- Only the top 3 in chat, and only connected players anywhere.
 for id = 201, 207 do AddPlayer(id, kTeam1Index) end
 StartGame() Run(600) Gamerules:EndGame()
 table.remove(Players) -- 207 disconnects
-lines = Lines()
-local listed = select(2, lines[1]:gsub(",", "")) + 1
-check(listed == 5, "rounds list has 5 names, got " .. listed)
-check(not lines[1]:find("P207") and not lines[2]:find("P207"), "disconnected players are not listed")
+chat = SSM_MatchesInARow_GetChatLines()
+check(#chat == 8, "chat: 2 headers + 3 rows each, got " .. #chat)
+check(not ChatText(chat):find("P207"), "disconnected players are not listed")
 
 -- The console gets everyone with a count: A and C (4 rounds, 30 + 10 min) and 201-206 (1 round,
 -- 10 min). B and D sat the last round out; 207 is gone.
-local full = SSM_MatchesInARow_GetFullStreaksLines()
+local full = Lines()
 check(#full == 19, "console list: 2 headers, a blank line, 8 players twice, got " .. #full)
 check(full[1] == "Players sorted by rounds played" and full[10] == "" and full[11] == "Players sorted by minutes played", "console list headers")
-check(full[2] == "  1. P101  4r  40m" and full[3] == "  2. P103  4r  40m" and full[4] == "  3. P201  1r  10m",
+check(full[2] == "  1. P101  4r" and full[3] == "  2. P103  4r" and full[4] == "  3. P201  1r",
     "console rounds ranking, got " .. tostring(full[2]) .. " | " .. tostring(full[3]) .. " | " .. tostring(full[4]))
-check(full[12] == "  1. P101  40m  4r" and full[19] == "  8. P206  10m  1r", "console minutes ranking, got " .. tostring(full[12]) .. " | " .. tostring(full[19]))
+check(full[12] == "  1. P101  40m" and full[19] == "  8. P206  10m", "console minutes ranking, got " .. tostring(full[12]) .. " | " .. tostring(full[19]))
 local fullText = table.concat(full, "\n")
 check(not fullText:find("P207") and not fullText:find("P102") and not fullText:find("P104"), "console list skips the disconnected and players at 0")
 
-local registered, notified, printed = nil, {}, {}
+-- The commands themselves.
+local sayHooks, notified, printed = {}, {}, {}
 Shine = {
-    Commands = {},
-    fromChat = false,
-    RegisterCommand = function(self, con, chat, fn, noPerm)
-        registered = { con = con, chat = chat, fn = fn, noPerm = noPerm }
-        return { Help = function() end }
-    end,
-    IsCommandFromChat = function(self) return self.fromChat end,
-    NotifyDualColour = function(self, client, _, _, _, prefix, _, _, _, text)
-        notified[#notified + 1] = { client = client, text = prefix .. " " .. text }
+    Hook = { Add = function(event, name, fn) sayHooks[event .. ":" .. name] = fn end },
+    NotifyDualColour = function(self, client, pr, pg, pb, prefix, r, g, b, text)
+        notified[#notified + 1] = { client = client, prefix = prefix, color = pr .. "," .. pg .. "," .. pb, text = text }
     end
 }
 function ServerAdminPrint(client, text) printed[#printed + 1] = { client = client, text = text } end
 
 local caller = Players[1].client
-LoadServer() -- commands register on the first server update once Shine is there
+LoadServer() -- the chat hook goes in on the first server update, once Shine is there
+check(Hooks["Console_sud_streaks"] ~= nil, "sud_streaks is a plain console command")
 Hooks.UpdateServer()
-check(registered and registered.con == "sud_streaks" and registered.chat == "streaks", "commands registered")
-check(registered and registered.noPerm == true, "open to everyone")
-registered.fn(caller)
-check(#printed == 19 and printed[1].client == caller, "console: the full list to the caller, got " .. #printed)
-Shine.fromChat = true
-registered.fn(caller)
-check(#notified == 2 and notified[1].client == caller, "chat: 2 lines to the caller only")
-check(notified[1].text:find("^%[Matches In A Row%] Most rounds") ~= nil, "chat line has the prefix")
+local onSay = sayHooks["PlayerSay:SSM_MatchesInARow"]
+check(onSay ~= nil, "chat hooked through Shine's PlayerSay")
+
+Hooks["Console_sud_streaks"](caller)
+check(#printed == 19 and printed[1].client == caller and printed[2].client == caller, "console: the full list to the caller only, got " .. #printed)
+
+check(onSay(caller, { message = "hello" }) == nil and #notified == 0, "ordinary chat is left alone")
+check(onSay(caller, { message = "  !Streaks " }) == "", "!streaks is answered and hidden from chat")
+check(#notified == 8, "chat: 8 lines, got " .. #notified)
+check(notified[1].client == caller and notified[8].client == caller, "chat goes to the caller only")
+check(notified[1].prefix == "[NS2 SUD]" and notified[1].color == "255,0,255", "headers carry the magenta [NS2 SUD] tag")
+check(notified[2].prefix == "" and notified[2].text == "1. P101  4r", "rows continue under the header, got " .. tostring(notified[2].text))
+check(onSay(caller, { message = "/streaks" }) == "", "/streaks works too")
+
+-- Before any round: one line, to the caller only, in both places.
+Now = Now + 7200
+LoadServer()
+notified, printed = {}, {}
+Hooks["Console_sud_streaks"](caller)
+check(#printed == 1 and printed[1].text == kNobody, "console before any round: one line")
+Hooks.UpdateServer()
+sayHooks["PlayerSay:SSM_MatchesInARow"](caller, { message = "!streaks" })
+check(#notified == 1 and notified[1].text == kNobody and notified[1].prefix == "[NS2 SUD]", "chat before any round: one tagged line")
 Shine = nil
 
 print(string.format("%d passed, %d failed", passes, failures))

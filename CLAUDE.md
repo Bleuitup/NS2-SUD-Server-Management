@@ -19,7 +19,8 @@ NS2 Launch Pad layout, matching the author's other mods:
 mod.settings                       Workshop metadata and description (never put a backslash in it)
 preview.jpg                        Workshop preview, 512x512 (author's GPT artwork; Launch Pad scales it to 512)
 source/lua/entry/SSM.entry         entry: Server script only, for now
-source/lua/SSM/Server.lua          loads each feature's server file
+source/lua/SSM/Server.lua          loads Messages.lua, then each feature's server file
+source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta) and console print
 source/lua/SSM/<Feature>/...       one folder per feature
 test/matchesinarow.lua             logic test, runs outside the game
 output/                            Launch Pad build output, gitignored
@@ -39,7 +40,7 @@ register them in the same order.
 
 Counts rounds in a row and minutes played over them. `sud_streaks` (console) lists every
 connected player with a count, ranked by rounds and by minutes; `!streaks` (chat, caller only)
-gives the top 5 of each. Built for a server with no
+gives the top 3 of each. Built for a server with no
 queue (16 players + 5 spectators) where players hand their slot to a spectator after 3-4 games.
 Information only; never make it enforce anything.
 
@@ -74,7 +75,15 @@ ScoreBoard.
 - **The commands are open to everyone**, for transparency. Ranked by rounds (ties by minutes,
   then name) and by minutes (ties by rounds, then name), connected players with a count only.
   **The console gets the full list** (the author: the console has room for all 16 players), one
-  player per line; **chat gets two lines with the top 5 of each**, because chat is small.
+  player per line; **chat gets the top 3 of each, one player per chat line** (the author's pick
+  over one combined list, 1.0b), because chat is small. Each list shows only the value it is
+  sorted by. Headers read "Players sorted by rounds played" / "... minutes played" (author's
+  wording). Before any round, both commands answer the caller with one line instead.
+- **The commands make no noise for others** (1.0b): no Shine admin-log line, and the typed
+  `!streaks` is dropped from public chat.
+- **Every chat message from the mod uses the `[NS2 SUD]` tag in magenta** (`SSM.Notify` in
+  `Messages.lua`), the same magenta as Hive Spawn Selector's tag. One voice for all features;
+  headers carry the tag, rows under them do not.
 
 ### How it works (`MatchesInARow/Server.lua`)
 
@@ -92,12 +101,16 @@ ScoreBoard.
   server can sit idle on one map for hours), measured from `LastActiveAt`. That is set and saved
   at round start, every `kActiveSaveSeconds` (300) during a round, and at round end, so a restart
   65 minutes into a 70-minute round still keeps the counts.
-- Commands go through Shine when it is loaded (`Shine:RegisterCommand`, `NoPerm = true`),
-  registered on the first `UpdateServer` rather than at file load, because load order between
-  mods is not guaranteed - the same opportunistic pattern Hive Spawn Selector uses for
-  CustomSpawns. Not a Shine plugin. `Shine:IsCommandFromChat()` picks chat
-  (`NotifyDualColour`, caller only) or console (`ServerAdminPrint`; `Shared.Message` from the
-  server console). Without Shine there are no commands.
+- **The commands are not Shine commands** (changed in 1.0b): Shine's `RunCommand` prints
+  "X ran command ..." to every client with `sh_seelogechos` after each command, and there is no
+  flag to stop it. `sud_streaks` is a plain game console command
+  (`Event.Hook("Console_sud_streaks")`, works without Shine, prints with `ServerAdminPrint`, or
+  `Shared.Message` from the server console). `!streaks` / `/streaks` are caught with
+  `Shine.Hook.Add("PlayerSay", ...)` - not a Shine plugin - which answers through `SSM.Notify` and
+  returns `""` so the typed message is dropped. The hook is added on the first `UpdateServer`,
+  because load order between mods is not guaranteed - the same opportunistic pattern Hive Spawn
+  Selector uses for CustomSpawns. Chat lines are separate messages because a single chat message
+  cannot hold line breaks.
 
 ## Testing
 

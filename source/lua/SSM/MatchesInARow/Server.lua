@@ -23,10 +23,10 @@
 -- day's play session starts from scratch. "Playing" is refreshed every kActiveSaveSeconds during a
 -- round, so a server that restarts deep into a 70-minute round still keeps its counts.
 --
--- The counts are only ever shown through two commands, which need Shine: sud_streaks
--- (console) lists every connected player with a count, ranked by rounds and by minutes; !streaks
--- (chat, seen only by whoever typed it) gives the top 5 of each. Open to everyone, for
--- transparency. Without Shine the commands simply do not exist. Nothing is sent to clients and
+-- The counts are only ever shown through two commands, open to everyone for transparency:
+-- sud_streaks (console) lists every connected player with a count, ranked by rounds and by
+-- minutes; !streaks (chat, seen only by whoever typed it) gives the top 3 of each. The console
+-- command needs nothing else; the chat command needs Shine. Nothing else is sent to clients and
 -- the mod has no client files.
 
 local kSettingsFile = "SSM_MatchesInARow.json"
@@ -204,7 +204,8 @@ end
 
 -- Streaks: the two rankings ------------------------------------------------------------------
 
-local kTopCount = 5
+-- Chat has little room, so it gets the top 3 of each list; the console gets everyone.
+local kChatCount = 3
 
 -- Connected players with a count, as { name, rounds, minutes }.
 local function GetConnectedStreaks()
@@ -222,7 +223,7 @@ local function GetConnectedStreaks()
     return list
 end
 
-local kNobody = "Nobody has played a round in a row yet."
+local kNobody = "No rounds have been counted yet this session."
 
 -- Ranks by `first`, ties broken by `second`, then by name.
 local function Rank(list, first, second)
@@ -237,89 +238,88 @@ local function Rank(list, first, second)
     end)
 end
 
--- "Bleu 4r, Pepe 4r, ..." - the top kTopCount, for chat.
-local function FormatTop(list, first, second, suffix)
-    Rank(list, first, second)
-
-    local parts = {}
-    for i = 1, math.min(kTopCount, #list) do
-        parts[i] = string.format("%s %d%s", list[i].name, list[i][first], suffix)
-    end
-
-    return table.concat(parts, ", ")
-end
-
--- Two short lines for chat, which has little room.
-function SSM_MatchesInARow_GetStreaksLines()
+-- Both rankings as { text, isListRow } pairs, `count` players each (nil for everyone). Each list
+-- shows only the value it is sorted by.
+local function BuildRankings(count)
     local list = GetConnectedStreaks()
     if #list == 0 then
-        return { kNobody }
+        return { { kNobody } }
     end
 
-    return {
-        "Most rounds in a row: " .. FormatTop(list, "rounds", "minutes", "r"),
-        "Most minutes in a row: " .. FormatTop(list, "minutes", "rounds", "m")
-    }
-end
-
--- Everyone with a count, one per line, for the console.
-function SSM_MatchesInARow_GetFullStreaksLines()
-    local list = GetConnectedStreaks()
-    if #list == 0 then
-        return { kNobody }
+    local lines = {}
+    local function AddList(header, first, second, suffix)
+        lines[#lines + 1] = { header }
+        Rank(list, first, second)
+        for i = 1, math.min(count or #list, #list) do
+            lines[#lines + 1] = { string.format("%d. %s  %d%s", i, list[i].name, list[i][first], suffix), true }
+        end
     end
 
-    local lines = { "Players sorted by rounds played" }
-    Rank(list, "rounds", "minutes")
-    for i, entry in ipairs(list) do
-        lines[#lines + 1] = string.format("%3d. %s  %dr  %dm", i, entry.name, entry.rounds, entry.minutes)
-    end
-
-    lines[#lines + 1] = ""
-    lines[#lines + 1] = "Players sorted by minutes played"
-    Rank(list, "minutes", "rounds")
-    for i, entry in ipairs(list) do
-        lines[#lines + 1] = string.format("%3d. %s  %dm  %dr", i, entry.name, entry.minutes, entry.rounds)
-    end
-
+    AddList("Players sorted by rounds played", "rounds", "minutes", "r")
+    AddList("Players sorted by minutes played", "minutes", "rounds", "m")
     return lines
 end
 
-local function OnStreaks(client)
-    if client and Shine:IsCommandFromChat() then
-        -- Goes to this client only.
-        for _, line in ipairs(SSM_MatchesInARow_GetStreaksLines()) do
-            Shine:NotifyDualColour(client, 180, 180, 180, "[Matches In A Row]", 255, 255, 255, line)
-        end
-        return
-    end
+-- For chat: the headers carry the [NS2 SUD] tag, the player rows continue under them.
+function SSM_MatchesInARow_GetChatLines()
+    return BuildRankings(kChatCount)
+end
 
-    for _, line in ipairs(SSM_MatchesInARow_GetFullStreaksLines()) do
-        if client then
-            ServerAdminPrint(client, line)
-        else
-            Shared.Message(line)
+-- For the console: everyone, indented under the headers, a blank line between the lists.
+function SSM_MatchesInARow_GetConsoleLines()
+    local lines = {}
+    for i, line in ipairs(BuildRankings(nil)) do
+        if not line[2] and i > 1 then
+            lines[#lines + 1] = ""
         end
+        lines[#lines + 1] = line[2] and ("  " .. line[1]) or line[1]
+    end
+    return lines
+end
+
+-- sud_streaks in the console. A plain game console command rather than a Shine one: Shine logs
+-- every command it runs to the admins' consoles, and this needs no Shine at all.
+local function OnConsoleStreaks(client)
+    for _, line in ipairs(SSM_MatchesInARow_GetConsoleLines()) do
+        SSM.Print(client, line)
     end
 end
 
--- Shine is another mod, and the order mods load in is not guaranteed, so this waits until the
--- server is running rather than looking for Shine when this file loads.
-local commandsRegistered = false
-local function RegisterCommands()
-    commandsRegistered = true
-
-    if not (Shine and Shine.RegisterCommand and Shine.Commands) then
+-- !streaks (or /streaks) in chat, answered to that player only. Returning "" drops the typed
+-- message, so nobody else sees the command either.
+local function OnPlayerSay(client, message)
+    local text = message and message.message
+    if type(text) ~= "string" then
         return
     end
 
-    local command = Shine:RegisterCommand("sud_streaks", "streaks", OnStreaks, true)
-    command:Help("Lists rounds and minutes played in a row: every player in the console, the top 5 in chat.")
+    local command = string.lower(text:match("^%s*(.-)%s*$"))
+    if command ~= "!streaks" and command ~= "/streaks" then
+        return
+    end
+
+    for _, line in ipairs(SSM_MatchesInARow_GetChatLines()) do
+        SSM.Notify(client, line[1], line[2])
+    end
+
+    return ""
+end
+
+-- Chat commands are caught through Shine's PlayerSay hook (without becoming a Shine plugin).
+-- Shine is another mod and the order mods load in is not guaranteed, so this waits until the
+-- server is running rather than looking for Shine when this file loads.
+local chatHooked = false
+local function HookChat()
+    chatHooked = true
+
+    if Shine and Shine.Hook and Shine.Hook.Add then
+        Shine.Hook.Add("PlayerSay", "SSM_MatchesInARow", OnPlayerSay)
+    end
 end
 
 local function OnUpdateServer()
-    if not commandsRegistered then
-        RegisterCommands()
+    if not chatHooked then
+        HookChat()
     end
 
     local gamerules = GetGamerules()
@@ -352,5 +352,6 @@ oldEndGame = Class_ReplaceMethod("NS2Gamerules", "EndGame", function(self, ...)
 end)
 
 Event.Hook("UpdateServer", OnUpdateServer)
+Event.Hook("Console_sud_streaks", OnConsoleStreaks)
 
 Load()

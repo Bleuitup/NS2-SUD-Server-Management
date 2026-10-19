@@ -9,31 +9,39 @@ Built for a server with no queue, where players hand their slot to a waiting spe
 games. The server counts how many rounds in a row each player has played and how many minutes they
 played over them. Anyone can check:
 
-- `!streaks` in chat gives the top 5 by rounds and the top 5 by minutes, shown only to whoever
-  typed it:
+- `!streaks` (or `/streaks`) in chat gives the top 3 by rounds and the top 3 by minutes, shown
+  only to whoever typed it. The typed command itself is hidden from everyone else:
 
   ```
-  Most rounds in a row: Pepe 4r, Bleu 4r, Ana 3r, Juan 3r, Leo 2r
-  Most minutes in a row: Pepe 140m, Bleu 128m, Ana 101m, Juan 95m, Leo 60m
+  [NS2 SUD] Players sorted by rounds played
+  1. Pepe  4r
+  2. Bleu  4r
+  3. Ana  3r
+  [NS2 SUD] Players sorted by minutes played
+  1. Pepe  140m
+  2. Bleu  128m
+  3. Ana  101m
   ```
 
 - `sud_streaks` in the console lists every player with a count, ranked both ways:
 
   ```
   Players sorted by rounds played
-    1. Pepe  4r  140m
-    2. Bleu  4r  128m
+    1. Pepe  4r
+    2. Bleu  4r
   ...
 
   Players sorted by minutes played
-    1. Pepe  140m  4r
-    2. Bleu  128m  4r
+    1. Pepe  140m
+    2. Bleu  128m
   ...
   ```
 
-Only connected players are listed, and players at 0 are left out. Ties on rounds are broken by minutes, and the other way round.
-The commands need Shine; without it the counting still runs but there is no way to see it.
-Nothing is enforced.
+Only connected players are listed, and players at 0 are left out. Ties on rounds are broken by
+minutes, and the other way round. Before any round has been counted, both commands say so in one
+line. The console command works on its own; the chat command needs Shine. Nothing is enforced.
+
+All of the mod's chat messages carry a magenta `[NS2 SUD]` tag.
 
 - A round counts when the player was on Marines or Aliens at any moment of its first 2 minutes.
 - Joining later than that is subbing in, and counts as sitting the round out: back to 0.
