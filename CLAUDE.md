@@ -133,11 +133,17 @@ ScoreBoard.
 
 ## Whitelisting
 
-**Not whitelisted yet**; the author plans to apply soon. A non-whitelisted mod on the live server
-makes it unranked and switches off consistency checking, which lets some players' client mods
-desync and drop them. Until then, test locally.
+**Whitelisted** (requested from Ghoul for v1.0b, granted by 2026-11-08). The Workshop description
+says so in bold on its first line, as the author's other whitelisted mods do.
+
+The request described the mod as server-side only, with no client files and no network messages.
+Anything that would change that (bringing back the scoreboard tag, for example) is worth raising
+with Ghoul rather than slipping into an update. Before it was whitelisted, running it on the live
+server made the server unranked and switched off consistency checking, which let some players'
+client mods desync and drop them.
 
 ## Versioning
 
-Start at v1.0; 0.01 steps for small changes, 0.1 for features. Tag `vX.Y` (annotated,
-`"vX.Y - Workshop release"`) only after the author says the Workshop publish is live.
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice. Tag
+`vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
+is live.
