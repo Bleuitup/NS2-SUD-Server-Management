@@ -4,3 +4,4 @@
 Script.Load("lua/SSM/Messages.lua")
 
 Script.Load("lua/SSM/MatchesInARow/Server.lua")
+Script.Load("lua/SSM/CommMatch/Server.lua")

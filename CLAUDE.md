@@ -23,6 +23,7 @@ source/lua/SSM/Server.lua          loads Messages.lua, then each feature's serve
 source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta) and console print
 source/lua/SSM/<Feature>/...       one folder per feature
 test/matchesinarow.lua             logic test, runs outside the game
+test/commmatch.lua                 logic test for Commander Match
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -85,7 +86,7 @@ ScoreBoard.
   wording). Before any round, both commands answer the caller with one line instead.
 - **The commands make no noise for others** (1.0b): no Shine admin-log line, and the typed
   chat command is dropped from public chat.
-- **Every chat message from the mod uses the `[NS2 SUD]` tag in magenta** (`SSM.Notify` in
+- **Every chat message from the mod uses the `[NS2 SUD]` tag in magenta** (`SSM.Notify` / `SSM.NotifyAll` in
   `Messages.lua`), the same magenta as Hive Spawn Selector's tag. One voice for all features;
   headers carry the tag, rows under them do not.
 
@@ -116,6 +117,51 @@ ScoreBoard.
   Selector uses for CustomSpawns. Chat lines are separate messages because a single chat message
   cannot hold line breaks.
 
+## Feature: Commander Match (branch `feat/comm-match`, not released yet)
+
+Before the round starts, when someone takes a command chair and the other team has no human
+commander yet, everyone gets a chat message with the 5 players whose commander skill **for the
+other team** is closest to the new commander's, with the signed gap. Information only.
+
+### Rules (author's picks, 2026-11-16)
+
+- **Everyone sees it** (`SSM.NotifyAll`, Shine broadcast).
+- **Anyone connected can be listed**, any team, the commander's own team and spectators included.
+  Bots never.
+- **Players with a commander skill of exactly 0 are left out** (the Hive's "never commanded").
+  Not the vanilla fallback to field skill. A new commander at 0 gets no message.
+- **At most one message every 60 seconds**, server-wide, so chair-hopping cannot flood chat.
+- **Only the gap is shown**, not the skill numbers (`+` = above the commander, `-` = below).
+  Sorted by smallest gap, ties by name.
+
+### How it works (`CommMatch/Server.lua`)
+
+- Per-team commander skill is the game's own formula (`ScoringMixin:GetCommanderTeamSkill`):
+  Marines `commSkill + commSkillOffset`, Aliens `commSkill - commSkillOffset`. Computed from the
+  raw fields so it works for players on any team. The skill fields carry over when a player is
+  replaced (`ScoringMixin:CopyPlayerDataFrom`), so the Commander entity has them.
+- Post-wrap of `CommandStructure:LoginPlayer` via `Class_ReplaceMethod`; it returns the new
+  Commander entity. `CommandStation:LoginPlayer` overrides it but calls
+  `CommandStructure.LoginPlayer` inside, so both chairs pass through. The feature runs in a
+  `pcall` so an error can never break a login.
+- "Pregame" is `not GetGamerules():GetGameStarted()` (true only in `kGameState.Started`).
+
+## Open threads (remind the author)
+
+The author asked to be reminded of these; they were parked on 2026-11-16.
+
+- **Round credit (`feat/round-credit`, not started):** spectating a round takes 3 off the count
+  instead of resetting to 0; the first 10 to connect in a fresh session start at -1 (seeders).
+  Five open questions: -3 from the current count or reset-then-3; who counts as sitting out
+  (connected during the grace period, not on a team); subs as -3; whether -3 stacks; minutes as a
+  session total. Probably version 1.1.
+- **Spectator on connect (`feat/spectator-on-connect`, not started):** always or only during a
+  round; fine to fail when spectator slots are full; does the live server run Shine-Epsilon
+  readyroomqueue or Devnull AutoSpecKick.
+- **Extra badge:** a Shine config change, not a mod (badges without a column land in column 5).
+  Needs the server's badge config or which badge to move.
+- **Merge order** of the branches.
+
 ## Planned (author's ideas, not built yet)
 
 - Reminder messages so players learn the commands.
@@ -128,6 +174,9 @@ ScoreBoard.
 - `lua test/matchesinarow.lua` from the repo root runs the real server file against stubbed
   globals: counting rules, void and reset rounds, saving and loading, expiry, the long-round
   restart, top-5 limits and the commands.
+- `lua test/commmatch.lua` does the same for Commander Match: who is listed, order and gaps, the
+  cooldown, the other chair taken, round started, commander at 0, bots, no Shine, and an error
+  not breaking the login.
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 

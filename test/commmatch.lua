@@ -1,0 +1,188 @@
+-- Logic test for Commander Match, run outside the game against the real mod file:
+--   lua test/commmatch.lua        (from the repo root)
+--
+-- Stubs only the few engine, vanilla and Shine globals the file touches. Proves who is listed,
+-- the order, the gaps and when the message is sent; it says nothing about a real server.
+
+local kMessagesFile = "source/lua/SSM/Messages.lua"
+local kServerFile = "source/lua/SSM/CommMatch/Server.lua"
+
+local failures, passes = 0, 0
+local function check(condition, label)
+    if condition then
+        passes = passes + 1
+    else
+        failures = failures + 1
+        print("FAIL: " .. label)
+    end
+end
+
+-- ---------------------------------------------------------------------------------------------
+-- Stubs
+
+local Now = 0
+local Players = {}
+local Sent = {}
+local Started = false
+
+kTeamReadyRoom, kTeam1Index, kTeam2Index, kSpectatorIndex = 0, 1, 2, 3
+
+Shared = { GetTime = function() return Now end, Message = function(text) print("server: " .. text) end }
+Server = {
+    GetOwner = function(player) return player.client end,
+    ForAllPlayers = function(fn) for _, p in ipairs(Players) do fn(p) end end
+}
+function GetGamerules() return { GetGameStarted = function() return Started end } end
+
+Shine = {
+    NotifyDualColour = function(_, target, _, _, _, prefix, _, _, _, text)
+        Sent[#Sent + 1] = { target = target, prefix = prefix, text = text }
+    end
+}
+
+-- The chair: LoginPlayer turns the player into a commander and returns it, like the game.
+CommandStructure = {
+    LoginPlayer = function(_, player)
+        player.commander = true
+        return player
+    end
+}
+function Class_ReplaceMethod(className, methodName, method)
+    local original = _G[className][methodName]
+    _G[className][methodName] = method
+    return original
+end
+
+local function AddPlayer(name, team, commSkill, offset, isBot)
+    local player = { name = name, team = team, commSkill = commSkill, offset = offset or 0 }
+    player.client = { GetIsVirtual = function() return isBot == true end }
+    player.GetTeamNumber = function(self) return self.team end
+    player.GetName = function(self) return self.name end
+    player.isa = function(self, class) return class == "Commander" and self.commander == true end
+    player.GetCommanderSkill = function(self) return self.commSkill end
+    player.GetCommanderSkillOffset = function(self) return self.offset end
+    Players[#Players + 1] = player
+    return player
+end
+
+local function Login(player)
+    return CommandStructure.LoginPlayer({}, player)
+end
+
+local function Texts()
+    local t = {}
+    for i, m in ipairs(Sent) do t[i] = m.text end
+    return t
+end
+
+dofile(kMessagesFile)
+dofile(kServerFile)
+
+-- ---------------------------------------------------------------------------------------------
+-- Who is listed and how
+
+-- Bleu: commander skill 2000, offset +100 -> marine 2100, alien 1900.
+local Bleu = AddPlayer("Bleu", kTeam1Index, 2000, 100)
+-- Alien commander skills (skill - offset):
+AddPlayer("Pepe", kTeam2Index, 2150, 40)        -- 2110 -> +10
+AddPlayer("LZZ", kTeam1Index, 2000, -65)        -- 2065 -> -35, same team as Bleu, still listed
+AddPlayer("Ana", kSpectatorIndex, 2200, 120)    -- 2080 -> -20, spectators listed
+AddPlayer("Juan", kTeamReadyRoom, 1700, -400)   -- 2100 -> 0
+AddPlayer("Leo", kTeam2Index, 2500, 0)          -- 2500 -> +400
+AddPlayer("Max", kTeam2Index, 1500, 0)          -- 1500 -> -600, 6th, left off
+AddPlayer("Newbie", kTeam2Index, 0, 0)          -- never commanded, left out
+AddPlayer("Bot", kTeam2Index, 2100, 0, true)    -- bot, left out
+
+local returned = Login(Bleu)
+check(returned == Bleu, "the login still returns the commander")
+
+local t = Texts()
+check(#t == 6, "header plus 5 rows (got " .. #t .. ")")
+check(t[1] == "Bleu took Marine commander. Closest alien commanders:", "header: " .. tostring(t[1]))
+check(t[2] == "1. Juan  +0", "closest first, zero gap: " .. tostring(t[2]))
+check(t[3] == "2. Pepe  +10", "plus sign when above: " .. tostring(t[3]))
+check(t[4] == "3. Ana  -20", "spectator listed, minus when below: " .. tostring(t[4]))
+check(t[5] == "4. LZZ  -35", "same-team player listed: " .. tostring(t[5]))
+check(t[6] == "5. Leo  +400", "fifth: " .. tostring(t[6]))
+check(Sent[1].target == nil, "sent to everyone")
+check(Sent[1].prefix == "[NS2 SUD]" and Sent[2].prefix == "", "tag on the header only")
+for _, text in ipairs(t) do
+    check(not text:find("Newbie") and not text:find("Bot") and not text:find("Max"), "left out: " .. text)
+end
+
+-- ---------------------------------------------------------------------------------------------
+-- When it is sent
+
+-- Cooldown: Bleu hops out and back in 30 s later.
+Bleu.commander = false
+Sent = {}
+Now = 30
+Login(Bleu)
+check(#Sent == 0, "nothing within 60 seconds")
+
+-- 61 s after the first message it goes out again.
+Bleu.commander = false
+Now = 61
+Login(Bleu)
+check(#Sent == 6, "again after 60 seconds")
+
+-- Other team already has a commander: the alien who logs in gets no message.
+Sent = {}
+Now = 200
+local Pepe = Players[2]
+Login(Pepe)
+check(#Sent == 0, "nothing when the other chair is taken")
+
+-- Alien side, once the marine chair is empty again: compares with marine commander skill.
+Bleu.commander = false
+Pepe.commander = false
+Now = 300
+Login(Pepe) -- Pepe alien 2110; Bleu marine 2100 -> -10
+t = Texts()
+check(t[1] == "Pepe took Alien commander. Closest marine commanders:", "alien header: " .. tostring(t[1]))
+check(t[2] == "1. Bleu  -10", "uses others' marine skill: " .. tostring(t[2]))
+
+-- Round already started: nothing.
+Pepe.commander = false
+Sent = {}
+Now = 400
+Started = true
+Login(Pepe)
+check(#Sent == 0, "nothing once the round has started")
+Started = false
+
+-- A commander who has never commanded: nothing to compare.
+local Newbie = Players[8]
+Pepe.commander = false
+Sent = {}
+Now = 500
+Login(Newbie)
+check(#Sent == 0, "nothing for a commander at 0")
+Newbie.commander = false
+
+-- A bot commander: nothing.
+local Bot = Players[9]
+Sent = {}
+Now = 600
+Login(Bot)
+check(#Sent == 0, "nothing for a bot commander")
+Bot.commander = false
+
+-- Without Shine nothing is sent and nothing breaks.
+local savedShine = Shine
+Shine = nil
+Now = 700
+check(Login(Bleu) == Bleu, "works without Shine")
+Shine = savedShine
+Bleu.commander = false
+
+-- An error inside the feature never breaks the login.
+local brokenGetName = Bleu.GetName
+Bleu.GetName = function() error("boom") end
+Now = 800
+Sent = {}
+check(Login(Bleu) == Bleu, "login survives an error in the feature")
+Bleu.GetName = brokenGetName
+
+print(string.format("%d passed, %d failed", passes, failures))
+os.exit(failures == 0 and 0 or 1)

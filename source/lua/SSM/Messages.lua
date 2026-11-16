@@ -8,7 +8,7 @@
 -- In a block of lines only the headers carry the prefix; the rows under them pass `continued`, so
 -- a list does not repeat the tag on every row.
 --
--- Chat goes through Shine, which is what can color a line and send it to one player. Without
+-- Chat goes through Shine, which is what can color a line and send it to one player or to all. Without
 -- Shine nothing is sent.
 --
 -- Console: plain lines in the caller's own console, or the server console when there is no caller.
@@ -26,6 +26,17 @@ function SSM.Notify(client, text, continued)
     end
 
     Shine:NotifyDualColour(client,
+        kPrefixColor[1], kPrefixColor[2], kPrefixColor[3], continued and "" or kPrefix,
+        kTextColor[1], kTextColor[2], kTextColor[3], text)
+end
+
+-- One chat line to everyone on the server (Shine sends to all when the target is nil).
+function SSM.NotifyAll(text, continued)
+    if not (Shine and Shine.NotifyDualColour) then
+        return
+    end
+
+    Shine:NotifyDualColour(nil,
         kPrefixColor[1], kPrefixColor[2], kPrefixColor[3], continued and "" or kPrefix,
         kTextColor[1], kTextColor[2], kTextColor[3], text)
 end
