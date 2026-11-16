@@ -1,4 +1,4 @@
--- NS2 SUD Server Admin - the chat commands of every feature, and the mod's own: !commands, !lang.
+-- NS2 SUD Server Admin - the chat commands of every feature, and the mod's own: !help, !lang.
 --
 -- Chat commands are caught through Shine's PlayerSay hook, not as Shine commands: Shine logs every
 -- command it runs to the admins' consoles ("X ran command ..."), and this way nobody else even
@@ -7,7 +7,7 @@
 -- first server update rather than when this file loads.
 --
 -- Features add their commands with SSM.AddChatCommand and list them (chat and console ones) for
--- !commands with SSM.ListCommand, in the order they should be shown.
+-- !help with SSM.ListCommand, in the order they should be shown.
 
 local ChatCommands = {}   -- [word without ! or /] = function(client, args)
 local Listed = {}         -- { usage, descriptionKey, isConsole } in display order
@@ -48,7 +48,7 @@ Event.Hook("UpdateServer", function()
     end
 end)
 
--- !commands: says so in chat, lists everything in the caller's console.
+-- !help: says so in chat, lists everything in the caller's console.
 function SSM_GetCommandLines(language)
     local lines = { SSM.Text(language, "commands_header") }
     for _, command in ipairs(Listed) do
@@ -58,14 +58,14 @@ function SSM_GetCommandLines(language)
     return lines
 end
 
-SSM.AddChatCommand("commands", function(client)
+SSM.AddChatCommand("help", function(client)
     local language = SSM.LanguageOf(client)
     SSM.Notify(client, SSM.Text(language, "commands_chat"))
     for _, line in ipairs(SSM_GetCommandLines(language)) do
         SSM.Print(client, line)
     end
 end)
-SSM.ListCommand("!commands", "cmd_commands")
+SSM.ListCommand("!help", "cmd_help")
 
 -- !lang es / pt / en. "br" is taken as Portuguese. Anything else shows how to use it.
 local kLanguageWords = { en = "en", es = "es", pt = "pt", br = "pt" }

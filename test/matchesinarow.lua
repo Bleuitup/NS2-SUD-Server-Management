@@ -358,27 +358,27 @@ check(notified[1].text == "Server messages will now be in English.", "back to En
 check(Files["SSM_Languages.json"]["101"] == nil, "English is not stored")
 
 -- ---------------------------------------------------------------------------------------------
--- !commands: a chat line pointing to the console, the full list in the console
+-- !help: a chat line pointing to the console, the full list in the console
 
 notified, printed = {}, {}
-check(say(caller, { message = "!commands" }) == "", "!commands is answered and hidden")
+check(say(caller, { message = "!help" }) == "", "!help is answered and hidden")
 check(#notified == 1 and notified[1].text == "All server commands are listed in your console." and notified[1].client == caller,
-    "!commands: one private chat line")
+    "!help: one private chat line")
 local commandText = {}
 for i, p in ipairs(printed) do commandText[i] = p.text end
 commandText = table.concat(commandText, "\n")
 check(printed[1].text == "NS2 SUD server commands", "console list header")
-for _, usage in ipairs({ "!commands", "!lang", "!streakr", "!streakm", "sud_streaks" }) do
-    check(commandText:find(usage, 1, true) ~= nil, "!commands lists " .. usage)
+for _, usage in ipairs({ "!help", "!lang", "!streakr", "!streakm", "sud_streaks" }) do
+    check(commandText:find(usage, 1, true) ~= nil, "!help lists " .. usage)
 end
 check(commandText:find("sud_streaks%s+%(console%)") ~= nil and commandText:find("!streakr%s+%(chat%)") ~= nil,
     "chat and console commands are marked, got:\n" .. commandText)
 
 say(caller, { message = "!lang es" })
 printed = {}
-say(caller, { message = "!commands" })
+say(caller, { message = "!help" })
 check(printed[1].text == "Comandos del servidor NS2 SUD" and printed[#printed].text:find("partidas sucesivas") ~= nil,
-    "!commands in Spanish")
+    "!help in Spanish")
 check(say(caller, { message = "!nothing" }) == nil, "unknown ! words are left alone")
 Shine = nil
 

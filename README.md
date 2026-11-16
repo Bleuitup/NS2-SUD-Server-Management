@@ -5,7 +5,7 @@ Server side only: none of its code runs on players' machines.
 
 ## Commands and language
 
-- `!commands` in chat lists every command of the mod in the player's console (and says so in
+- `!help` in chat lists every command of the mod in the player's console (and says so in
   chat).
 - `!lang es`, `!lang pt` (or `!lang br`) and `!lang en` pick the language of the messages the mod
   sends to that player alone: English, Spanish or Portuguese. Remembered per Steam ID; English

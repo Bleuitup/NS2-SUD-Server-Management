@@ -1,7 +1,7 @@
 -- NS2 SUD Server Admin - server files for every feature.
 
 -- Shared by every feature, so they load first: the chat voice and languages, the texts, and the
--- chat command router with !commands and !lang.
+-- chat command router with !help and !lang.
 Script.Load("lua/SSM/Messages.lua")
 Script.Load("lua/SSM/Strings.lua")
 Script.Load("lua/SSM/Commands.lua")

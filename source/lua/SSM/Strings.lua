@@ -18,7 +18,7 @@ en.lang_usage = "To pick the language of server messages: !lang es, !lang pt or 
 es.lang_usage = "Para elegir el idioma de los mensajes del servidor: !lang es, !lang pt o !lang en"
 pt.lang_usage = "Para escolher o idioma das mensagens do servidor: !lang es, !lang pt ou !lang en"
 
--- !commands
+-- !help
 en.commands_chat = "All server commands are listed in your console."
 es.commands_chat = "La lista de comandos del servidor está en la consola."
 pt.commands_chat = "A lista de comandos do servidor está no console."
@@ -35,9 +35,9 @@ en.commands_console_tag = "console"
 es.commands_console_tag = "consola"
 pt.commands_console_tag = "console"
 
-en.cmd_commands = "This list, in the console"
-es.cmd_commands = "Esta lista, en la consola"
-pt.cmd_commands = "Esta lista, no console"
+en.cmd_help = "This list, in the console"
+es.cmd_help = "Esta lista, en la consola"
+pt.cmd_help = "Esta lista, no console"
 
 en.cmd_lang = "Language of server messages: es, pt or en"
 es.cmd_lang = "Idioma de los mensajes del servidor: es, pt o en"
