@@ -4,7 +4,8 @@
 -- Stubs only the few engine, vanilla and Shine globals the file touches. Proves the counting
 -- rules and the commands; it says nothing about how they behave on a real server.
 
-local kMessagesFile = "source/lua/SSM/Messages.lua"
+-- The shared files every feature needs, in the order SSM/Server.lua loads them.
+local kSharedFiles = { "source/lua/SSM/Messages.lua", "source/lua/SSM/Strings.lua", "source/lua/SSM/Commands.lua" }
 local kServerFile = "source/lua/SSM/MatchesInARow/Server.lua"
 local kDataFile = "SSM_MatchesInARowData.json"
 
@@ -54,7 +55,11 @@ Server = {
     ForAllPlayers = function(fn) for _, p in ipairs(Players) do fn(p) end end
 }
 
-Event = { Hook = function(name, fn) Hooks[name] = fn end }
+-- Several files can hook the same event, as in the game; the last one's result is returned.
+Event = { Hook = function(name, fn)
+    local previous = Hooks[name]
+    Hooks[name] = previous and function(...) previous(...) return fn(...) end or fn
+end }
 
 function Class_ReplaceMethod(className, methodName, method)
     local original = _G[className][methodName]
@@ -98,8 +103,9 @@ end
 -- A fresh server Lua, as after a map change or restart.
 local function LoadServer()
     Hooks = {}
+    SSM = nil
     NS2Gamerules = { EndGame = function() Gamerules.started = false end }
-    dofile(kMessagesFile)
+    for _, file in ipairs(kSharedFiles) do dofile(file) end
     dofile(kServerFile)
 end
 
@@ -284,7 +290,7 @@ local caller = Players[1].client
 LoadServer() -- the chat hook goes in on the first server update, once Shine is there
 check(Hooks["Console_sud_streaks"] ~= nil, "sud_streaks is a plain console command")
 Hooks.UpdateServer()
-local onSay = sayHooks["PlayerSay:SSM_MatchesInARow"]
+local onSay = sayHooks["PlayerSay:SSM_Chat"]
 check(onSay ~= nil, "chat hooked through Shine's PlayerSay")
 
 Hooks["Console_sud_streaks"](caller)
@@ -310,8 +316,70 @@ notified, printed = {}, {}
 Hooks["Console_sud_streaks"](caller)
 check(#printed == 1 and printed[1].text == kNobody, "console before any round: one line")
 Hooks.UpdateServer()
-sayHooks["PlayerSay:SSM_MatchesInARow"](caller, { message = "!streakm" })
+sayHooks["PlayerSay:SSM_Chat"](caller, { message = "!streakm" })
 check(#notified == 1 and notified[1].text == kNobody and notified[1].prefix == "[NS2 SUD]", "chat before any round: one tagged line")
+
+-- ---------------------------------------------------------------------------------------------
+-- !lang: private messages in the caller's language
+
+local say = sayHooks["PlayerSay:SSM_Chat"]
+notified, printed = {}, {}
+check(say(caller, { message = "!lang es" }) == "", "!lang is answered and hidden")
+check(notified[1].text == "Los mensajes del servidor ahora estarán en español.", "!lang es confirms in Spanish")
+check(Files["SSM_Languages.json"]["101"] == "es", "language saved per Steam ID")
+
+notified, printed = {}, {}
+say(caller, { message = "!streakr" })
+check(notified[1].text == "Todavía no se contó ninguna partida en esta sesión.", "streaks answer in Spanish")
+Hooks["Console_sud_streaks"](caller)
+check(printed[1].text == "Todavía no se contó ninguna partida en esta sesión.", "console answers in Spanish too")
+
+-- Survives a map change.
+LoadServer()
+Hooks.UpdateServer()
+say = sayHooks["PlayerSay:SSM_Chat"]
+check(SSM.LanguageOf(caller) == "es", "language remembered after a reload")
+check(SSM.LanguageOf(Players[2].client) == "en", "others stay in English")
+check(SSM.LanguageOf(nil) == "en", "server console is English")
+
+-- Spanish rankings: the unit is "p" (partidas).
+check(SSM_MatchesInARow_GetChatLines("rounds", "es")[1][1] == "Todavía no se contó ninguna partida en esta sesión.", "Spanish empty state")
+
+notified = {}
+say(caller, { message = "/lang BR" })
+check(notified[1].text == "As mensagens do servidor agora estarão em português.", "br is Portuguese")
+notified = {}
+say(caller, { message = "!lang klingon" })
+check(notified[1].text:find("^Para escolher o idioma") ~= nil, "unknown language: usage, in the current language")
+check(Files["SSM_Languages.json"]["101"] == "pt", "unknown language changes nothing")
+notified = {}
+say(caller, { message = "!lang en" })
+check(notified[1].text == "Server messages will now be in English.", "back to English")
+check(Files["SSM_Languages.json"]["101"] == nil, "English is not stored")
+
+-- ---------------------------------------------------------------------------------------------
+-- !commands: a chat line pointing to the console, the full list in the console
+
+notified, printed = {}, {}
+check(say(caller, { message = "!commands" }) == "", "!commands is answered and hidden")
+check(#notified == 1 and notified[1].text == "All server commands are listed in your console." and notified[1].client == caller,
+    "!commands: one private chat line")
+local commandText = {}
+for i, p in ipairs(printed) do commandText[i] = p.text end
+commandText = table.concat(commandText, "\n")
+check(printed[1].text == "NS2 SUD server commands", "console list header")
+for _, usage in ipairs({ "!commands", "!lang", "!streakr", "!streakm", "sud_streaks" }) do
+    check(commandText:find(usage, 1, true) ~= nil, "!commands lists " .. usage)
+end
+check(commandText:find("sud_streaks%s+%(console%)") ~= nil and commandText:find("!streakr%s+%(chat%)") ~= nil,
+    "chat and console commands are marked, got:\n" .. commandText)
+
+say(caller, { message = "!lang es" })
+printed = {}
+say(caller, { message = "!commands" })
+check(printed[1].text == "Comandos del servidor NS2 SUD" and printed[#printed].text:find("partidas sucesivas") ~= nil,
+    "!commands in Spanish")
+check(say(caller, { message = "!nothing" }) == nil, "unknown ! words are left alone")
 Shine = nil
 
 print(string.format("%d passed, %d failed", passes, failures))

@@ -19,10 +19,13 @@ NS2 Launch Pad layout, matching the author's other mods:
 mod.settings                       Workshop metadata and description (never put a backslash in it)
 preview.jpg                        Workshop preview, 512x512 (author's GPT artwork; Launch Pad scales it to 512)
 source/lua/entry/SSM.entry         entry: Server script only, for now
-source/lua/SSM/Server.lua          loads Messages.lua, then each feature's server file
-source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta) and console print
+source/lua/SSM/Server.lua          loads the shared files, then each feature's server file
+source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta), console print, languages
+source/lua/SSM/Strings.lua         every private text in English, Spanish and Portuguese
+source/lua/SSM/Commands.lua        chat command router (Shine PlayerSay), !commands, !lang
 source/lua/SSM/<Feature>/...       one folder per feature
-test/matchesinarow.lua             logic test, runs outside the game
+test/matchesinarow.lua             logic test, runs outside the game (also !lang and !commands)
+test/spectatoronconnect.lua        logic test for Spectator On Connect
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -31,7 +34,9 @@ Launch Pad rewrites `mod.settings` on publish. Workshop id `3822092803` (`publis
 2026-10-18). On that first publish Launch Pad refused the hand-written file; the author deleted it,
 published, and the description was restored from git afterwards. Keep `image = "preview.jpg"` in it.
 
-New features get their own folder under `lua/SSM/` and a line in `SSM/Server.lua`. A feature that
+New features get their own folder under `lua/SSM/` and a line in `SSM/Server.lua`. Their chat
+commands go through `SSM.AddChatCommand` and are listed for `!commands` with `SSM.ListCommand`;
+their private texts go in `Strings.lua` in all three languages. A feature that
 needs client code or network messages adds `Client` / `Shared` (and `FileHooks` if needed) back to
 the entry with matching loaders; network messages belong in a Shared script so server and client
 register them in the same order.
@@ -109,17 +114,70 @@ ScoreBoard.
   "X ran command ..." to every client with `sh_seelogechos` after each command, and there is no
   flag to stop it. `sud_streaks` is a plain game console command
   (`Event.Hook("Console_sud_streaks")`, works without Shine, prints with `ServerAdminPrint`, or
-  `Shared.Message` from the server console). `!streakr` / `!streakm` (and with `/`) are caught with
-  `Shine.Hook.Add("PlayerSay", ...)` - not a Shine plugin - which answers through `SSM.Notify` and
-  returns `""` so the typed message is dropped. The hook is added on the first `UpdateServer`,
-  because load order between mods is not guaranteed - the same opportunistic pattern Hive Spawn
-  Selector uses for CustomSpawns. Chat lines are separate messages because a single chat message
-  cannot hold line breaks.
+  `Shared.Message` from the server console). `!streakr` / `!streakm` (and with `/`) go through the
+  shared chat router (`Commands.lua`, below). Chat lines are separate messages because a single
+  chat message cannot hold line breaks.
+
+## Shared: chat commands, !commands and !lang (`Commands.lua`, `Messages.lua`, `Strings.lua`)
+
+- **One chat router for every feature.** `Shine.Hook.Add("PlayerSay", "SSM_Chat", ...)` - not a
+  Shine plugin, not Shine commands, so no admin-log line - matches `!word` or `/word` (any case,
+  arguments after a space), runs the handler and returns `""` so nobody else sees the typed
+  command. Unknown words are left alone. The hook is added on the first `UpdateServer`, because
+  load order between mods is not guaranteed - the same opportunistic pattern Hive Spawn Selector
+  uses for CustomSpawns.
+- **`!commands`** (author's request, 2026-11-16; it is the old "!help" idea): one private chat
+  line saying the list is in the console, and the list in the caller's console: every command
+  registered with `SSM.ListCommand`, marked chat or console, `!commands` and `!lang` included.
+- **Private messages follow the player's language** (author's request, 2026-11-16): English,
+  Spanish or Portuguese; everything else is English, and messages to everyone stay English.
+  **The server cannot see the game's language** (client-side only; Shine translates on the
+  client; the Hive data has no country), so the author chose **`!lang es|pt|br|en`**, remembered
+  per Steam ID in `config://SSM_Languages.json` (string keys; English is not stored). The other
+  options were a Steam-profile-country lookup (needs a Web API key, often wrong) and a client file
+  sending the language (would end the "no client files" whitelist pitch).
+- **Texts live in `Strings.lua`**, all three languages side by side; missing keys fall back to
+  English. Spanish avoids "tú" and "vos" where it can (players from all over the region) and calls
+  rounds in a row **"partidas sucesivas"** (the author's term); the round unit is `p`. Portuguese is
+  Brazilian. Not reviewed by a native speaker yet.
+
+## Feature: Spectator On Connect (`SpectatorOnConnect/Server.lua`)
+
+Everyone who connects starts as a spectator instead of in the ready room. Built 2026-11-16 on
+`feat/spectator-on-connect`, not released.
+
+- **Why:** the server caps non-spectators (16) and people in total (21), not spectators
+  (the author: 12 players + 9 spectators is possible). Someone in the ready room uses one of the
+  16, so a newcomer idling there could take the slot of a player who dropped mid-round. Joining
+  a team from spectator is only let through while a player slot is free (vanilla
+  `Gamerules:GetCanJoinPlayingTeam`).
+- **Always**, pregame included (author's pick). Bots and clients the game already put in a
+  spectator slot are left alone.
+- **Map changes are exempt** (author's pick): every client reconnects then. Who is connected is
+  saved every 5 s to `config://SSM_SpectatorOnConnectState.json` (anyone seen in the last 30 s, so
+  clients dropped in the last frames of a map are not lost). If that save is under 2 minutes old
+  when the map loads, those players land in the ready room on their first reconnect within 5
+  minutes. A later reconnect (a crash) is moved like anyone else.
+- **One private line** to the moved player, 5 s after connecting so it arrives in game, in their
+  language: "You start as a spectator. Join a team when a player slot is free."
+- Post-wrap of `NS2Gamerules:OnClientConnect` (which vanilla already uses to move spectator-slot
+  clients); the move is `JoinTeam(player, kSpectatorIndex, true)`, which also calls
+  `SetIsSpectator(true)` and so frees the player slot. Runs in a `pcall` so an error can never
+  break a connect.
+- The author will disable Shine-Epsilon readyroomqueue / Devnull AutoSpecKick if the live server
+  runs them (AutoSpecKick could kick idle spectators, which every newcomer now is).
+
+## Open threads (remind the author)
+
+- **Merge / release order:** `feat/comm-match` (Commander Match) and this branch. They both touch
+  `Messages.lua`, `SSM/Server.lua`, `README.md` and this file, so the second merge needs small
+  conflict fixes; Commander Match should then use the shared router if it ever gets commands.
+- **Round credit - parked, not short term** (author, 2026-11-16: "we don't play that many in a
+  row"): -3 per spectated round instead of reset, seeders (first 10) start at -1.
 
 ## Planned (author's ideas, not built yet)
 
-- Reminder messages so players learn the commands.
-- A `!help`-style command listing the mod's commands, printed to the console once there are many.
+- Reminder messages so players learn the commands (now there is `!commands` to point them to).
 
 ## Testing
 
@@ -127,7 +185,11 @@ ScoreBoard.
   LuaJIT/5.1, so this proves parsing only).
 - `lua test/matchesinarow.lua` from the repo root runs the real server file against stubbed
   globals: counting rules, void and reset rounds, saving and loading, expiry, the long-round
-  restart, top-5 limits and the commands.
+  restart, top-5 limits and the commands, plus `!lang` (saving, reload, br, unknown, back to
+  English, Spanish answers) and `!commands`.
+- `lua test/spectatoronconnect.lua`: who is moved, bots and spectator slots left alone, the
+  delayed line in the player's language, someone leaving first, an error not breaking the
+  connect, the map-change exemption (used once, window, old save, empty last frames).
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 

@@ -26,7 +26,8 @@
 -- The counts are only ever shown through commands, open to everyone for transparency:
 -- sud_streaks (console) lists every connected player with a count, ranked by rounds and by
 -- minutes; !streakr and !streakm (chat, seen only by whoever typed it) give the top 5 by rounds
--- and by minutes. The console command needs nothing else; the chat commands need Shine.
+-- and by minutes. Both answer in the caller's language (!lang). The console command needs nothing
+-- else; the chat commands need Shine.
 -- Nothing else is sent to clients and the mod has no client files.
 
 local kSettingsFile = "SSM_MatchesInARow.json"
@@ -208,16 +209,10 @@ end
 -- everyone, both ways.
 local kChatCount = 5
 
--- The two rankings. Each shows only the value it is sorted by.
+-- The two rankings. Each shows only the value it is sorted by. Texts are in Strings.lua.
 local kRankings = {
-    rounds = { header = "Players sorted by rounds played", first = "rounds", second = "minutes", suffix = "r" },
-    minutes = { header = "Players sorted by minutes played", first = "minutes", second = "rounds", suffix = "m" }
-}
-
--- Chat commands and the ranking each one shows.
-local kChatCommands = {
-    ["!streakr"] = "rounds", ["/streakr"] = "rounds",
-    ["!streakm"] = "minutes", ["/streakm"] = "minutes"
+    rounds = { header = "streaks_rounds_header", first = "rounds", second = "minutes", unit = "streaks_rounds_unit" },
+    minutes = { header = "streaks_minutes_header", first = "minutes", second = "rounds", unit = "streaks_minutes_unit" }
 }
 
 -- Connected players with a count, as { name, rounds, minutes }.
@@ -236,8 +231,6 @@ local function GetConnectedStreaks()
     return list
 end
 
-local kNobody = "No rounds have been counted yet this session."
-
 -- Ranks by `first`, ties broken by `second`, then by name.
 local function Rank(list, first, second)
     table.sort(list, function(a, b)
@@ -251,21 +244,23 @@ local function Rank(list, first, second)
     end)
 end
 
--- The named rankings as { text, isListRow } pairs, `count` players each (nil for everyone).
-local function BuildRankings(kinds, count)
+-- The named rankings as { text, isListRow } pairs, `count` players each (nil for everyone), in
+-- the given language.
+local function BuildRankings(kinds, count, language)
     local list = GetConnectedStreaks()
     if #list == 0 then
-        return { { kNobody } }
+        return { { SSM.Text(language, "streaks_nobody") } }
     end
 
     local lines = {}
     for _, kind in ipairs(kinds) do
         local ranking = kRankings[kind]
-        lines[#lines + 1] = { ranking.header }
+        local unit = SSM.Text(language, ranking.unit)
+        lines[#lines + 1] = { SSM.Text(language, ranking.header) }
         Rank(list, ranking.first, ranking.second)
         for i = 1, math.min(count or #list, #list) do
             local entry = list[i]
-            lines[#lines + 1] = { string.format("%d. %s  %d%s", i, entry.name, entry[ranking.first], ranking.suffix), true }
+            lines[#lines + 1] = { string.format("%d. %s  %d%s", i, entry.name, entry[ranking.first], unit), true }
         end
     end
 
@@ -273,15 +268,15 @@ local function BuildRankings(kinds, count)
 end
 
 -- For chat, one ranking ("rounds" or "minutes"): the header carries the [NS2 SUD] tag, the
--- player rows continue under it.
-function SSM_MatchesInARow_GetChatLines(kind)
-    return BuildRankings({ kind }, kChatCount)
+-- player rows continue under it. English unless a language is given.
+function SSM_MatchesInARow_GetChatLines(kind, language)
+    return BuildRankings({ kind }, kChatCount, language or "en")
 end
 
 -- For the console: everyone, both rankings, indented under the headers, a blank line between.
-function SSM_MatchesInARow_GetConsoleLines()
+function SSM_MatchesInARow_GetConsoleLines(language)
     local lines = {}
-    for i, line in ipairs(BuildRankings({ "rounds", "minutes" }, nil)) do
+    for i, line in ipairs(BuildRankings({ "rounds", "minutes" }, nil, language or "en")) do
         if not line[2] and i > 1 then
             lines[#lines + 1] = ""
         end
@@ -293,48 +288,28 @@ end
 -- sud_streaks in the console. A plain game console command rather than a Shine one: Shine logs
 -- every command it runs to the admins' consoles, and this needs no Shine at all.
 local function OnConsoleStreaks(client)
-    for _, line in ipairs(SSM_MatchesInARow_GetConsoleLines()) do
+    for _, line in ipairs(SSM_MatchesInARow_GetConsoleLines(SSM.LanguageOf(client))) do
         SSM.Print(client, line)
     end
 end
 
--- !streakr / !streakm (or with /) in chat, answered to that player only. Returning "" drops the
--- typed message, so nobody else sees the command either.
-local function OnPlayerSay(client, message)
-    local text = message and message.message
-    if type(text) ~= "string" then
-        return
-    end
-
-    local kind = kChatCommands[string.lower(text:match("^%s*(.-)%s*$"))]
-    if not kind then
-        return
-    end
-
-    for _, line in ipairs(SSM_MatchesInARow_GetChatLines(kind)) do
-        SSM.Notify(client, line[1], line[2])
-    end
-
-    return ""
-end
-
--- Chat commands are caught through Shine's PlayerSay hook (without becoming a Shine plugin).
--- Shine is another mod and the order mods load in is not guaranteed, so this waits until the
--- server is running rather than looking for Shine when this file loads.
-local chatHooked = false
-local function HookChat()
-    chatHooked = true
-
-    if Shine and Shine.Hook and Shine.Hook.Add then
-        Shine.Hook.Add("PlayerSay", "SSM_MatchesInARow", OnPlayerSay)
+-- !streakr / !streakm (or with /) in chat, answered to that player only, in their language. The
+-- shared chat router in Commands.lua hides the typed command from everyone else.
+local function ChatRanking(kind)
+    return function(client)
+        for _, line in ipairs(SSM_MatchesInARow_GetChatLines(kind, SSM.LanguageOf(client))) do
+            SSM.Notify(client, line[1], line[2])
+        end
     end
 end
+
+SSM.AddChatCommand("streakr", ChatRanking("rounds"))
+SSM.AddChatCommand("streakm", ChatRanking("minutes"))
+SSM.ListCommand("!streakr", "cmd_streakr")
+SSM.ListCommand("!streakm", "cmd_streakm")
+SSM.ListCommand("sud_streaks", "cmd_sud_streaks", true)
 
 local function OnUpdateServer()
-    if not chatHooked then
-        HookChat()
-    end
-
     local gamerules = GetGamerules()
     if not gamerules then
         return

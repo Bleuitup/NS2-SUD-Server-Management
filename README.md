@@ -3,6 +3,19 @@
 Server administration quality of life for the NS2 Sudamerica server. No gameplay changes.
 Server side only: none of its code runs on players' machines.
 
+## Commands and language
+
+- `!commands` in chat lists every command of the mod in the player's console (and says so in
+  chat).
+- `!lang es`, `!lang pt` (or `!lang br`) and `!lang en` pick the language of the messages the mod
+  sends to that player alone: English, Spanish or Portuguese. Remembered per Steam ID; English
+  until set. Messages to everyone stay in English. The server cannot see the game's own language
+  setting, which is why players pick it here.
+
+Every chat command also works with `/`, and the typed command is hidden from everyone else. The
+chat commands need Shine; console commands work without it. Languages are kept in
+`SSM_Languages.json` in the server's config folder.
+
 ## Matches in a row
 
 Built for a server with no queue, where players hand their slot to a waiting spectator after a few
@@ -62,3 +75,18 @@ All of the mod's chat messages carry a magenta `[NS2 SUD]` tag.
 | `ForgetAfterMinutes` | 60 | Counts are dropped after this long with nobody playing a round |
 
 The counts themselves are kept in `SSM_MatchesInARowData.json` next to it.
+
+## Spectator on connect
+
+Everyone who connects starts as a spectator instead of in the ready room, and gets one private
+line saying so. The server caps players who are not spectators (and people in total), so someone
+idling in the ready room takes a player slot; starting everyone as a spectator keeps a slot freed
+by a dropped player free until a spectator joins a team, which the game only allows while a
+player slot is open.
+
+- Always on, pregame included.
+- Map changes are the exception: players who were on the server when the map ended land in the
+  ready room as usual. Who was connected is kept in `SSM_SpectatorOnConnectState.json`.
+- Bots, and anyone the game already put in a spectator slot, are left alone.
+- Plugins that kick idle spectators (Devnull's AutoSpecKick, for example) should be off, since
+  every newcomer is now a spectator.
