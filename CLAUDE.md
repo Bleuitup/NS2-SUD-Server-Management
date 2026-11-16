@@ -150,17 +150,20 @@ other team** is closest to the new commander's, with the signed gap. Information
 
 The author asked to be reminded of these; they were parked on 2026-11-16.
 
-- **Round credit (`feat/round-credit`, not started):** spectating a round takes 3 off the count
-  instead of resetting to 0; the first 10 to connect in a fresh session start at -1 (seeders).
-  Five open questions: -3 from the current count or reset-then-3; who counts as sitting out
-  (connected during the grace period, not on a team); subs as -3; whether -3 stacks; minutes as a
-  session total. Probably version 1.1.
-- **Spectator on connect (`feat/spectator-on-connect`, not started):** always or only during a
-  round; fine to fail when spectator slots are full; does the live server run Shine-Epsilon
-  readyroomqueue or Devnull AutoSpecKick.
-- **Extra badge:** a Shine config change, not a mod (badges without a column land in column 5).
-  Needs the server's badge config or which badge to move.
-- **Merge order** of the branches.
+- **Spectator on connect (`feat/spectator-on-connect`, not started, next up):** always or only
+  during a round; fine to fail when spectator slots are full; does the live server run
+  Shine-Epsilon readyroomqueue or Devnull AutoSpecKick.
+- **Merge order / release** of `feat/comm-match` and the spectator branch.
+
+Parked or dropped (2026-11-16):
+
+- **Round credit - parked, not short term** (the author: "we don't play that many in a row").
+  Idea: spectating a round takes 3 off the count instead of resetting to 0; the first 10 to
+  connect in a fresh session start at -1 (seeders). Open questions if it returns: -3 from the
+  current count or reset-then-3; who counts as sitting out; subs as -3; whether -3 stacks;
+  minutes as a session total.
+- **Extra badge - dropped.** (It was a Shine badge-config change, not a mod: badges without a
+  column land in column 5.)
 
 ## Planned (author's ideas, not built yet)
 
