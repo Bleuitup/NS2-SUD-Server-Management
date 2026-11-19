@@ -8,3 +8,4 @@ Script.Load("lua/SSM/Commands.lua")
 
 Script.Load("lua/SSM/MatchesInARow/Server.lua")
 Script.Load("lua/SSM/SpectatorOnConnect/Server.lua")
+Script.Load("lua/SSM/CommMatch/Server.lua")

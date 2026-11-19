@@ -26,6 +26,7 @@ source/lua/SSM/Commands.lua        chat command router (Shine PlayerSay), !help,
 source/lua/SSM/<Feature>/...       one folder per feature
 test/matchesinarow.lua             logic test, runs outside the game (also !lang and !help)
 test/spectatoronconnect.lua        logic test for Spectator On Connect
+test/commmatch.lua                 logic test for Commander Match
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -90,7 +91,7 @@ ScoreBoard.
   wording). Before any round, both commands answer the caller with one line instead.
 - **The commands make no noise for others** (1.0b): no Shine admin-log line, and the typed
   chat command is dropped from public chat.
-- **Every chat message from the mod uses the `[NS2 SUD]` tag in magenta** (`SSM.Notify` in
+- **Every chat message from the mod uses the `[NS2 SUD]` tag in magenta** (`SSM.Notify` / `SSM.NotifyAll` in
   `Messages.lua`), the same magenta as Hive Spawn Selector's tag. One voice for all features;
   headers carry the tag, rows under them do not.
 
@@ -167,13 +168,54 @@ Everyone who connects starts as a spectator instead of in the ready room. Built 
 - The author will disable Shine-Epsilon readyroomqueue / Devnull AutoSpecKick if the live server
   runs them (AutoSpecKick could kick idle spectators, which every newcomer now is).
 
+## Feature: Commander Match (`CommMatch/Server.lua`; built 2026-11-16 on `feat/comm-match`, not released)
+
+Before the round starts, when someone takes a command chair and the other team has no human
+commander yet, everyone gets a chat message with the 5 players whose commander skill **for the
+other team** is closest to the new commander's, with the signed gap. Information only.
+
+### Rules (author's picks, 2026-11-16)
+
+- **Everyone sees it** (`SSM.NotifyAll`, Shine broadcast).
+- **Anyone connected can be listed**, any team, the commander's own team and spectators included.
+  Bots never.
+- **Players with a commander skill of exactly 0 are left out** (the Hive's "never commanded").
+  Not the vanilla fallback to field skill. A new commander at 0 gets no message.
+- **At most one message every 60 seconds**, server-wide, so chair-hopping cannot flood chat.
+- **Only the gap is shown**, not the skill numbers (`+` = above the commander, `-` = below).
+  Sorted by smallest gap, ties by name.
+
+### How it works (`CommMatch/Server.lua`)
+
+- Per-team commander skill is the game's own formula (`ScoringMixin:GetCommanderTeamSkill`):
+  Marines `commSkill + commSkillOffset`, Aliens `commSkill - commSkillOffset`. Computed from the
+  raw fields so it works for players on any team. The skill fields carry over when a player is
+  replaced (`ScoringMixin:CopyPlayerDataFrom`), so the Commander entity has them.
+- Post-wrap of `CommandStructure:LoginPlayer` via `Class_ReplaceMethod`; it returns the new
+  Commander entity. `CommandStation:LoginPlayer` overrides it but calls
+  `CommandStructure.LoginPlayer` inside, so both chairs pass through. The feature runs in a
+  `pcall` so an error can never break a login.
+- "Pregame" is `not GetGamerules():GetGameStarted()` (true only in `kGameState.Started`).
+
 ## Open threads (remind the author)
 
-- **Merge / release order:** `feat/comm-match` (Commander Match) and this branch. They both touch
-  `Messages.lua`, `SSM/Server.lua`, `README.md` and this file, so the second merge needs small
-  conflict fixes; Commander Match should then use the shared router if it ever gets commands.
-- **Round credit - parked, not short term** (author, 2026-11-16: "we don't play that many in a
-  row"): -3 per spectated round instead of reset, seeders (first 10) start at -1.
+- **Branches:** `feat/comm-match` and `feat/spectator-on-connect` are combined on `test/combined`
+  (2026-11-19) for one Launch Pad test; nothing merged into `main` or pushed yet. Commander Match
+  should use the shared chat router if it ever gets commands.
+- **Release:** version name (1.1 proposed, new features rather than fixes); the Workshop
+  description in `mod.settings` still says matches in a row is the only feature (the author
+  edits it); Spanish and Portuguese texts in `Strings.lua` not reviewed by a native speaker;
+  AutoSpecKick off on the live server.
+
+Parked or dropped (2026-11-16):
+
+- **Round credit - parked, not short term** (the author: "we don't play that many in a row").
+  Idea: spectating a round takes 3 off the count instead of resetting to 0; the first 10 to
+  connect in a fresh session start at -1 (seeders). Open questions if it returns: -3 from the
+  current count or reset-then-3; who counts as sitting out; subs as -3; whether -3 stacks;
+  minutes as a session total.
+- **Extra badge - dropped.** (It was a Shine badge-config change, not a mod: badges without a
+  column land in column 5.)
 
 ## Planned (author's ideas, not built yet)
 
@@ -190,6 +232,9 @@ Everyone who connects starts as a spectator instead of in the ready room. Built 
 - `lua test/spectatoronconnect.lua`: who is moved, bots and spectator slots left alone, the
   delayed line in the player's language, someone leaving first, an error not breaking the
   connect, the map-change exemption (used once, window, old save, empty last frames).
+- `lua test/commmatch.lua` does the same for Commander Match: who is listed, order and gaps, the
+  cooldown, the other chair taken, round started, commander at 0, bots, no Shine, and an error
+  not breaking the login.
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 

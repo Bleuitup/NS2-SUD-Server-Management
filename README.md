@@ -90,3 +90,26 @@ player slot is open.
 - Bots, and anyone the game already put in a spectator slot, are left alone.
 - Plugins that kick idle spectators (Devnull's AutoSpecKick, for example) should be off, since
   every newcomer is now a spectator.
+
+## Commander match
+
+Before the round starts, when someone takes the Marine or Alien chair and the other team has no
+commander yet, everyone gets a chat message with the 5 players whose commander skill for the other
+team is closest to the new commander's, and the gap:
+
+```
+[NS2 SUD] Bleu took Marine commander. Closest alien commanders:
+1. Juan  +0
+2. Pepe  +10
+3. Ana  -20
+4. LZZ  -35
+5. Leo  +400
+```
+
+- A Marine commander is compared with everyone's Alien commander skill, and the other way round,
+  using the game's own per-team commander skill.
+- Anyone connected can be listed, on any team (the commander's own included) or spectating.
+  Bots and players with a commander skill of exactly 0 (never commanded) are left out.
+- `+` means that player is above the new commander, `-` below.
+- At most one message every 60 seconds. Nothing is posted once the round has started.
+- Needs Shine for the chat message. Nothing is enforced.
