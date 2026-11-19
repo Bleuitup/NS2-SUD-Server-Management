@@ -111,5 +111,7 @@ team is closest to the new commander's, and the gap:
 - Anyone connected can be listed, on any team (the commander's own included) or spectating.
   Bots and players with a commander skill of exactly 0 (never commanded) are left out.
 - `+` means that player is above the new commander, `-` below.
-- At most one message every 60 seconds. Nothing is posted once the round has started.
+- At most one list every 30 seconds per commander on the same side. Switching between the Marine
+  and Alien chair skips that wait, and another player taking a chair is never held back by it.
+  Nothing is posted once the round has started.
 - Needs Shine for the chat message. Nothing is enforced.

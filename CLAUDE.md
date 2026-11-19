@@ -181,7 +181,10 @@ other team** is closest to the new commander's, with the signed gap. Information
   Bots never.
 - **Players with a commander skill of exactly 0 are left out** (the Hive's "never commanded").
   Not the vanilla fallback to field skill. A new commander at 0 gets no message.
-- **At most one message every 60 seconds**, server-wide, so chair-hopping cannot flood chat.
+- **Cooldown per player, 30 s** (author, 2026-11-19; was 60 s server-wide): the same commander
+  gets at most one list every 30 s on the same side. Switching side (Marine to Alien chair or back)
+  skips it, and another player taking a chair is never held back by it ("we can always manually
+  enforce"). Kept per Steam ID with the side of the last list.
 - **Only the gap is shown**, not the skill numbers (`+` = above the commander, `-` = below).
   Sorted by smallest gap, ties by name.
 

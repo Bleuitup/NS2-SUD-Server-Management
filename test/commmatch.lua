@@ -59,7 +59,8 @@ end
 
 local function AddPlayer(name, team, commSkill, offset, isBot)
     local player = { name = name, team = team, commSkill = commSkill, offset = offset or 0 }
-    player.client = { GetIsVirtual = function() return isBot == true end }
+    local steamId = #Players + 1000
+    player.client = { GetIsVirtual = function() return isBot == true end, GetUserId = function() return steamId end }
     player.GetTeamNumber = function(self) return self.team end
     player.GetName = function(self) return self.name end
     player.isa = function(self, class) return class == "Commander" and self.commander == true end
@@ -117,18 +118,44 @@ end
 -- ---------------------------------------------------------------------------------------------
 -- When it is sent
 
--- Cooldown: Bleu hops out and back in 30 s later.
+-- Cooldown, per player: Bleu hops out and back into the Marine chair 20 s later.
+local LZZ = Players[3]
 Bleu.commander = false
 Sent = {}
-Now = 30
+Now = 20
 Login(Bleu)
-check(#Sent == 0, "nothing within 60 seconds")
+check(#Sent == 0, "same player, same side, within 30 seconds: nothing")
 
--- 61 s after the first message it goes out again.
+-- Another player taking the chair is not held back by Bleu's cooldown.
 Bleu.commander = false
-Now = 61
+Now = 25
+Login(LZZ)
+check(#Sent == 6 and Sent[1].text:find("^LZZ took Marine") ~= nil, "another player gets the list right away")
+LZZ.commander = false
+
+-- Bleu switching side skips the cooldown, both ways.
+Sent = {}
+Now = 26
+Bleu.team = kTeam2Index
 Login(Bleu)
-check(#Sent == 6, "again after 60 seconds")
+check(#Sent == 6 and Sent[1].text:find("^Bleu took Alien") ~= nil, "Marine to Alien: no cooldown")
+Bleu.commander = false
+Sent = {}
+Now = 40
+Bleu.team = kTeam1Index
+Login(Bleu)
+check(#Sent == 6 and Sent[1].text:find("^Bleu took Marine") ~= nil, "Alien back to Marine: no cooldown")
+
+-- Same side again: held back until 30 s have passed since that player's last list.
+Bleu.commander = false
+Sent = {}
+Now = 69
+Login(Bleu)
+check(#Sent == 0, "29 seconds later: nothing")
+Bleu.commander = false
+Now = 70
+Login(Bleu)
+check(#Sent == 6, "30 seconds later: again")
 
 -- Other team already has a commander: the alien who logs in gets no message.
 Sent = {}

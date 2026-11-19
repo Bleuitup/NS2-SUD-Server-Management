@@ -14,8 +14,10 @@
 --     included. Bots never are.
 --   * Players whose commander skill is exactly 0 (never commanded) are left out. A new commander
 --     at 0 gets no message, since there is nothing to compare.
---   * At most one message every kCooldownSeconds, so hopping in and out of the chair does not
---     flood chat.
+--   * Cooldown per player (author, 2026-11-19): at most one message every kCooldownSeconds for
+--     the same commander, so hopping in and out of the chair does not flood chat. It does not
+--     apply when that player switches side (Marine to Alien chair or back), and another player
+--     taking a chair is never held back by it. Anything beyond that admins enforce by hand.
 --   * Only the gap is shown, signed: + means that player is above the new commander.
 --
 -- Commander skill per team is the game's own: the Hive gives one commander skill plus an offset,
@@ -23,15 +25,15 @@
 -- A Marine commander is compared with everyone's Alien commander skill, and the other way round.
 
 local kListCount = 5
-local kCooldownSeconds = 60
+local kCooldownSeconds = 30
 
 local kTeamNames = {
     [kTeam1Index] = { title = "Marine", other = "alien" },
     [kTeam2Index] = { title = "Alien", other = "marine" }
 }
 
--- Shared.GetTime() of the last message, nil before the first.
-local lastPostTime
+-- [steamId] = { time = Shared.GetTime(), team = team number } of that player's last message.
+local LastPost = {}
 
 local function GetHumanClient(player)
     local client = Server.GetOwner(player)
@@ -129,17 +131,21 @@ local function OnCommanderLogin(commander)
         return
     end
 
-    if not GetHumanClient(commander) then
-        return
-    end
-
-    local now = Shared.GetTime()
-    if lastPostTime and now - lastPostTime < kCooldownSeconds then
+    local client = GetHumanClient(commander)
+    if not client then
         return
     end
 
     local team = commander:GetTeamNumber()
     if not kTeamNames[team] then
+        return
+    end
+
+    -- Per player, and only for the same side: switching chairs is never held back.
+    local steamId = client:GetUserId()
+    local now = Shared.GetTime()
+    local last = LastPost[steamId]
+    if last and last.team == team and now - last.time < kCooldownSeconds then
         return
     end
     if TeamHasHumanCommander(team == kTeam1Index and kTeam2Index or kTeam1Index) then
@@ -151,7 +157,7 @@ local function OnCommanderLogin(commander)
         return
     end
 
-    lastPostTime = now
+    LastPost[steamId] = { time = now, team = team }
     for _, line in ipairs(lines) do
         SSM.NotifyAll(line[1], line[2])
     end
