@@ -8,7 +8,13 @@ Server tools for the NS2 Sudamerica server.
 
 The scope of this mod is bound to simplify admin workload and ease the experience of the players of NS2 Sudamerica. This mod will never enact gameplay or balance changes of any kind.
 
-The only current feature is consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play.
+Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; and the closest commander matchups before a round.
+
+[h1]Commands and language[/h1]
+[list]
+[*]Type [b]!help[/b] in chat for the full list of commands, printed in your console
+[*]Type [b]!lang es[/b], [b]!lang pt[/b] or [b]!lang en[/b] to get the messages only you see in Spanish, Portuguese or English. The server remembers your choice
+[/list]
 
 [h1]Matches in a row[/h1]
 [list]
@@ -19,6 +25,20 @@ The only current feature is consecutive rounds played and minutes played, to sim
 [*]Subbing in partway through a round counts as sitting it out, so helping a team never costs you
 [*]Joining a team in the first 2 minutes of a round counts as playing it, even if you step out later
 [*]Counts carry over map changes and start fresh each play session. Rounds shorter than 1 minute don't add to your round count, but the minutes you played still count
+[/list]
+
+[h1]Spectator on connect[/h1]
+[list]
+[*]Everyone who joins the server starts as a spectator, so nobody takes up a player slot just by waiting in the ready room
+[*]Join a team from spectator whenever a player slot is free
+[*]After a map change, players who were already on the server start in the ready room as usual
+[/list]
+
+[h1]Commander match[/h1]
+[list]
+[*]Before a round starts, when someone takes a command chair and the other team has no commander yet, chat shows the 5 players whose commander skill for the other team is closest
+[*]Each name shows the gap: + means above the new commander, - means below
+[*]Players who have never commanded are left out
 [/list]
 "
 image       = "preview.jpg"

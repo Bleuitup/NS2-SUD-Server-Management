@@ -202,9 +202,9 @@ other team** is closest to the new commander's, with the signed gap. Information
 - **Branches:** `feat/comm-match` and `feat/spectator-on-connect` are combined on `test/combined`
   (2026-11-19) for one Launch Pad test; nothing merged into `main` or pushed yet. Commander Match
   should use the shared chat router if it ever gets commands.
-- **Release:** version name (1.1 proposed, new features rather than fixes); the Workshop
-  description in `mod.settings` still says matches in a row is the only feature (the author
-  edits it); Spanish and Portuguese texts in `Strings.lua` not reviewed by a native speaker;
+- **Release as v1.1** (agreed 2026-11-19). The Workshop
+  description in `mod.settings` is drafted for 1.1 (the author
+  may adjust it); Spanish and Portuguese texts in `Strings.lua` not reviewed by a native speaker;
   AutoSpecKick off on the live server.
 
 Parked or dropped (2026-11-16):
@@ -251,6 +251,6 @@ client mods desync and drop them.
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice. Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.
