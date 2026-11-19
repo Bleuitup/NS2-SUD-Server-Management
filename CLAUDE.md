@@ -144,8 +144,8 @@ ScoreBoard.
 
 ## Feature: Spectator On Connect (`SpectatorOnConnect/Server.lua`)
 
-Everyone who connects starts as a spectator instead of in the ready room. Built 2026-11-16 on
-`feat/spectator-on-connect`, not released.
+Everyone who connects starts as a spectator instead of in the ready room. Built 2026-11-16,
+released in v1.1 (2026-11-19).
 
 - **Why:** the server caps non-spectators (16) and people in total (21), not spectators
   (the author: 12 players + 9 spectators is possible). Someone in the ready room uses one of the
@@ -168,7 +168,7 @@ Everyone who connects starts as a spectator instead of in the ready room. Built 
 - The author will disable Shine-Epsilon readyroomqueue / Devnull AutoSpecKick if the live server
   runs them (AutoSpecKick could kick idle spectators, which every newcomer now is).
 
-## Feature: Commander Match (`CommMatch/Server.lua`; built 2026-11-16 on `feat/comm-match`, not released)
+## Feature: Commander Match (`CommMatch/Server.lua`; built 2026-11-16, released in v1.1)
 
 Before the round starts, when someone takes a command chair and the other team has no human
 commander yet, everyone gets a chat message with the 5 players whose commander skill **for the
@@ -202,13 +202,13 @@ other team** is closest to the new commander's, with the signed gap. Information
 
 ## Open threads (remind the author)
 
-- **Branches:** `feat/comm-match` and `feat/spectator-on-connect` are combined on `test/combined`
-  (2026-11-19) for one Launch Pad test; nothing merged into `main` or pushed yet. Commander Match
-  should use the shared chat router if it ever gets commands.
-- **Release as v1.1** (agreed 2026-11-19). The Workshop
-  description in `mod.settings` is drafted for 1.1 (the author
-  may adjust it); Spanish and Portuguese texts in `Strings.lua` not reviewed by a native speaker;
-  AutoSpecKick off on the live server.
+- **v1.1 published and tagged 2026-11-19** (`0ad93c0`, `main`): Spectator On Connect, Commander
+  Match, `!help`, `!lang`. Launch Pad had rewritten `mod.settings` back to the 1.0b description
+  before that publish, so the Workshop page probably still shows the old text; the 1.1
+  description is restored from git and needs one more publish to reach the page.
+- Spanish and Portuguese texts in `Strings.lua` not reviewed by a native speaker yet.
+- AutoSpecKick off on the live server (the author's call).
+- Commander Match should use the shared chat router if it ever gets commands.
 
 Parked or dropped (2026-11-16):
 
