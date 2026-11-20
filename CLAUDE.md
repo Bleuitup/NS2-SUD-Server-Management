@@ -191,8 +191,8 @@ other team** is closest to the new commander's, with the signed gap. Information
   commander skill, which the "exactly 0" rule cannot catch. Admins list their NS2 IDs
   (`client:GetUserId()`, numbers or numbers as text) in `IgnoredPlayers` in
   `config://SSM_CommMatch.json` (written empty on first run, read when the map loads). Ignored
-  players are never listed, and their own chair logins post nothing either (my call: their skill
-  means nothing as a baseline; easy to change if the author wants them compared).
+  players are never listed. If one takes a chair, the list still goes out as for anyone (the
+  author's pick, 2026-11-19; first built silent).
 
 ### How it works (`CommMatch/Server.lua`)
 

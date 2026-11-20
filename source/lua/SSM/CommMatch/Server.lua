@@ -20,8 +20,8 @@
 --     taking a chair is never held back by it. Anything beyond that admins enforce by hand.
 --   * Only the gap is shown, signed: + means that player is above the new commander.
 --   * Admins can ignore players by NS2 ID (author, 2026-11-19): some players never command but
---     carry a default commander skill. Ignored players are never listed, and their own chair
---     logins post nothing either, since their skill means nothing. The list is IgnoredPlayers in
+--     carry a default commander skill. Ignored players are never listed; if one takes a chair,
+--     the list still goes out as for anyone (the author's pick). The list is IgnoredPlayers in
 --     config://SSM_CommMatch.json, read when the map loads.
 --
 -- Commander skill per team is the game's own: the Hive gives one commander skill plus an offset,
@@ -175,7 +175,7 @@ local function OnCommanderLogin(commander, forced)
         return
     end
 
-    local client = GetListedClient(commander)
+    local client = GetHumanClient(commander)
     if not client then
         return
     end

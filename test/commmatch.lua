@@ -269,12 +269,12 @@ check(#t == 5 and t[2] == "1. Ana  -20" and t[3] == "2. LZZ  -35" and t[4] == "3
     "ignored players are not listed, got:\n" .. table.concat(t, "\n"))
 check(not table.concat(t, "\n"):find("Juan") and not table.concat(t, "\n"):find("Pepe"), "Juan and Pepe left out")
 
--- An ignored player taking a chair posts nothing.
+-- An ignored player taking a chair still gets a list, compared with everyone else.
 Bleu.commander = false
 Sent = {}
 Now = 1000
 Login(Pepe)
-check(#Sent == 0, "an ignored commander gets no list")
+check(#Sent > 0 and Sent[1].text:find("^Pepe took Alien") ~= nil and not Texts()[2]:find("Pepe"), "an ignored commander still gets a list")
 
 print(string.format("%d passed, %d failed", passes, failures))
 os.exit(failures == 0 and 0 or 1)

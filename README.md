@@ -123,7 +123,7 @@ team is closest to the new commander's, and the gap:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `IgnoredPlayers` | `[]` | NS2 IDs left out of the lists, for players who never command but carry a default commander skill. Their own chair logins post nothing either |
+| `IgnoredPlayers` | `[]` | NS2 IDs left out of the lists, for players who never command but carry a default commander skill. If one takes a chair, the list still goes out |
 
 For example `{ "IgnoredPlayers": [ 37745947, 12345678 ] }`. The NS2 ID is the number Shine and
 the Hive use for a player (the one in Shine's `UserConfig.json`). Changes apply from the next map.
