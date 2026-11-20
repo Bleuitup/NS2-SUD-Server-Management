@@ -24,7 +24,8 @@ end
 local Now = 0
 local Players = {}
 local Sent = {}
-local Started = false
+kGameState = { NotStarted = 1, WarmUp = 2, PreGame = 3, Countdown = 4, Started = 5, Team1Won = 6, Team2Won = 7, Draw = 8 }
+local State = kGameState.NotStarted
 
 kTeamReadyRoom, kTeam1Index, kTeam2Index, kSpectatorIndex = 0, 1, 2, 3
 
@@ -33,7 +34,7 @@ Server = {
     GetOwner = function(player) return player.client end,
     ForAllPlayers = function(fn) for _, p in ipairs(Players) do fn(p) end end
 }
-function GetGamerules() return { GetGameStarted = function() return Started end } end
+function GetGamerules() return { GetGameState = function() return State end } end
 function LoadConfigFile() return nil end
 function SaveConfigFile() end
 Event = { Hook = function() end }
@@ -70,8 +71,8 @@ local function AddPlayer(name, team, commSkill, offset, isBot)
     return player
 end
 
-local function Login(player)
-    return CommandStructure.LoginPlayer({}, player)
+local function Login(player, forced)
+    return CommandStructure.LoginPlayer({}, player, forced)
 end
 
 local function Texts()
@@ -173,14 +174,41 @@ t = Texts()
 check(t[1] == "Pepe took Alien commander. Closest marine commanders:", "alien header: " .. tostring(t[1]))
 check(t[2] == "1. Bleu  -10", "uses others' marine skill: " .. tostring(t[2]))
 
--- Round already started: nothing.
+-- Only in pregame: never during the countdown or once the round has started.
+for _, state in ipairs({ "Countdown", "Started", "Team1Won", "Draw" }) do
+    Pepe.commander = false
+    Sent = {}
+    Now = Now + 100
+    State = kGameState[state]
+    Login(Pepe)
+    check(#Sent == 0, "nothing in state " .. state)
+end
+
+-- Round start: the game resets the map and logs the commanders back in, forced, while the
+-- state is still PreGame and the other chair is briefly empty. That must not post (bug in 1.1).
+for _, state in ipairs({ "PreGame", "WarmUp" }) do
+    Pepe.commander = false
+    Bleu.commander = false
+    Sent = {}
+    Now = Now + 100
+    State = kGameState[state]
+    Login(Pepe, true)
+    check(#Sent == 0, "forced re-login posts nothing in " .. state)
+end
+
+-- An ordinary login in PreGame and WarmUp still posts.
+for _, state in ipairs({ "PreGame", "WarmUp" }) do
+    Pepe.commander = false
+    Bleu.commander = false
+    Sent = {}
+    Now = Now + 100
+    State = kGameState[state]
+    Login(Pepe)
+    check(#Sent == 6, "ordinary login posts in " .. state)
+end
 Pepe.commander = false
-Sent = {}
+State = kGameState.NotStarted
 Now = 400
-Started = true
-Login(Pepe)
-check(#Sent == 0, "nothing once the round has started")
-Started = false
 
 -- A commander who has never commanded: nothing to compare.
 local Newbie = Players[8]

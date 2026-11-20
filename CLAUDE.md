@@ -198,10 +198,16 @@ other team** is closest to the new commander's, with the signed gap. Information
   Commander entity. `CommandStation:LoginPlayer` overrides it but calls
   `CommandStructure.LoginPlayer` inside, so both chairs pass through. The feature runs in a
   `pcall` so an error can never break a login.
-- "Pregame" is `not GetGamerules():GetGameStarted()` (true only in `kGameState.Started`).
+- **Only in pregame** (author, 2026-11-19): game state `NotStarted`, `WarmUp` or `PreGame`, never
+  `Countdown` or later. **Forced logins are ignored**: at round start `NS2Gamerules:ResetGame`
+  rebuilds the map and calls `commandStructure:LoginPlayer(player, true)` for both commanders
+  while the state is still `PreGame` and the other chair is briefly empty, which made 1.1 post
+  the list again at round start (fixed in 1.1a).
 
 ## Open threads (remind the author)
 
+- **v1.1a (not published yet):** Commander Match no longer posts at round start (forced
+  re-logins ignored, pregame states only).
 - **v1.1 published and tagged 2026-11-19** (`0ad93c0`, `main`): Spectator On Connect, Commander
   Match, `!help`, `!lang`. Launch Pad had rewritten `mod.settings` back to the 1.0b description
   before that publish, so the Workshop page probably still shows the old text; the 1.1

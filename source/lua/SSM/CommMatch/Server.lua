@@ -121,13 +121,26 @@ function SSM_CommMatch_GetLines(commander)
     return lines
 end
 
-local function OnCommanderLogin(commander)
+-- Only before the round: not during the countdown, not once it has started.
+local function IsPregame(gamerules)
+    local state = gamerules:GetGameState()
+    return state == kGameState.NotStarted or state == kGameState.WarmUp or state == kGameState.PreGame
+end
+
+local function OnCommanderLogin(commander, forced)
+    -- Forced logins are the game putting commanders back in their chairs, above all when the
+    -- round starts: ResetGame rebuilds the map and logs both commanders in again while the state
+    -- is still PreGame (fixed in 1.1a; 1.1 posted the list again at round start).
+    if forced then
+        return
+    end
+
     if not (commander and commander.isa and commander:isa("Commander")) then
         return
     end
 
     local gamerules = GetGamerules()
-    if not gamerules or gamerules:GetGameStarted() then
+    if not gamerules or not IsPregame(gamerules) then
         return
     end
 
@@ -167,10 +180,10 @@ end
 -- LoginPlayer but calls CommandStructure.LoginPlayer inside, so both chairs pass through here.
 -- An error in this feature must never break a login, hence the pcall.
 local oldLoginPlayer
-oldLoginPlayer = Class_ReplaceMethod("CommandStructure", "LoginPlayer", function(self, ...)
-    local commander = oldLoginPlayer(self, ...)
+oldLoginPlayer = Class_ReplaceMethod("CommandStructure", "LoginPlayer", function(self, player, forced, ...)
+    local commander = oldLoginPlayer(self, player, forced, ...)
 
-    local ok, err = pcall(OnCommanderLogin, commander)
+    local ok, err = pcall(OnCommanderLogin, commander, forced)
     if not ok then
         Shared.Message("[NS2 SUD] Commander Match error: " .. tostring(err))
     end

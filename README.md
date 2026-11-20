@@ -113,5 +113,6 @@ team is closest to the new commander's, and the gap:
 - `+` means that player is above the new commander, `-` below.
 - At most one list every 30 seconds per commander on the same side. Switching between the Marine
   and Alien chair skips that wait, and another player taking a chair is never held back by it.
-  Nothing is posted once the round has started.
+  Only in pregame: never during the countdown or when the round starts (the game logging the
+  commanders back in at round start does not count).
 - Needs Shine for the chat message. Nothing is enforced.
