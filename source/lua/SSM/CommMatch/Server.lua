@@ -19,6 +19,10 @@
 --     apply when that player switches side (Marine to Alien chair or back), and another player
 --     taking a chair is never held back by it. Anything beyond that admins enforce by hand.
 --   * Only the gap is shown, signed: + means that player is above the new commander.
+--   * Admins can ignore players by NS2 ID (author, 2026-11-19): some players never command but
+--     carry a default commander skill. Ignored players are never listed, and their own chair
+--     logins post nothing either, since their skill means nothing. The list is IgnoredPlayers in
+--     config://SSM_CommMatch.json, read when the map loads.
 --
 -- Commander skill per team is the game's own: the Hive gives one commander skill plus an offset,
 -- Marines are skill + offset and Aliens skill - offset (ScoringMixin:GetCommanderTeamSkill).
@@ -35,9 +39,36 @@ local kTeamNames = {
 -- [steamId] = { time = Shared.GetTime(), team = team number } of that player's last message.
 local LastPost = {}
 
+-- Settings: IgnoredPlayers is a list of NS2 IDs (numbers, or numbers written as text).
+local kSettingsFile = "SSM_CommMatch.json"
+local Settings = LoadConfigFile(kSettingsFile, { IgnoredPlayers = {} })
+if type(Settings) ~= "table" then
+    Settings = {}
+end
+if type(Settings.IgnoredPlayers) ~= "table" then
+    Settings.IgnoredPlayers = {}
+    SaveConfigFile(kSettingsFile, Settings)
+end
+
+local Ignored = {}   -- [NS2 ID] = true
+for _, value in ipairs(Settings.IgnoredPlayers) do
+    local ns2Id = tonumber(value)
+    if ns2Id then
+        Ignored[ns2Id] = true
+    end
+end
+
+-- The player's client when it is a human who is not on the ignore list.
 local function GetHumanClient(player)
     local client = Server.GetOwner(player)
     if client and not client:GetIsVirtual() then
+        return client
+    end
+end
+
+local function GetListedClient(player)
+    local client = GetHumanClient(player)
+    if client and not Ignored[client:GetUserId()] then
         return client
     end
 end
@@ -91,7 +122,7 @@ function SSM_CommMatch_GetLines(commander)
 
     local list = {}
     Server.ForAllPlayers(function(player)
-        if player ~= commander and GetHumanClient(player) then
+        if player ~= commander and GetListedClient(player) then
             local skill = GetCommanderSkillFor(player, otherTeam)
             if skill then
                 list[#list + 1] = { name = player:GetName(), gap = Round(skill - own) }
@@ -130,7 +161,7 @@ end
 local function OnCommanderLogin(commander, forced)
     -- Forced logins are the game putting commanders back in their chairs, above all when the
     -- round starts: ResetGame rebuilds the map and logs both commanders in again while the state
-    -- is still PreGame (fixed in 1.1a; 1.1 posted the list again at round start).
+    -- is still PreGame (fixed in 1.1b; 1.1 posted the list again at round start).
     if forced then
         return
     end
@@ -144,7 +175,7 @@ local function OnCommanderLogin(commander, forced)
         return
     end
 
-    local client = GetHumanClient(commander)
+    local client = GetListedClient(commander)
     if not client then
         return
     end

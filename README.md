@@ -116,3 +116,14 @@ team is closest to the new commander's, and the gap:
   Only in pregame: never during the countdown or when the round starts (the game logging the
   commanders back in at round start does not count).
 - Needs Shine for the chat message. Nothing is enforced.
+
+### Server settings
+
+`SSM_CommMatch.json` in the server's config folder, created on first run:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `IgnoredPlayers` | `[]` | NS2 IDs left out of the lists, for players who never command but carry a default commander skill. Their own chair logins post nothing either |
+
+For example `{ "IgnoredPlayers": [ 37745947, 12345678 ] }`. The NS2 ID is the number Shine and
+the Hive use for a player (the one in Shine's `UserConfig.json`). Changes apply from the next map.

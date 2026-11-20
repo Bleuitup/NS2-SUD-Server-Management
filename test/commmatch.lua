@@ -35,8 +35,13 @@ Server = {
     ForAllPlayers = function(fn) for _, p in ipairs(Players) do fn(p) end end
 }
 function GetGamerules() return { GetGameState = function() return State end } end
-function LoadConfigFile() return nil end
-function SaveConfigFile() end
+local Files = {}
+function LoadConfigFile(name, default)
+    if Files[name] then return Files[name] end
+    if default then Files[name] = default end
+    return default
+end
+function SaveConfigFile(name, data) Files[name] = data end
 Event = { Hook = function() end }
 
 Shine = {
@@ -242,6 +247,34 @@ Now = 800
 Sent = {}
 check(Login(Bleu) == Bleu, "login survives an error in the feature")
 Bleu.GetName = brokenGetName
+
+-- ---------------------------------------------------------------------------------------------
+-- Ignored players
+
+check(type(Files["SSM_CommMatch.json"]) == "table" and #Files["SSM_CommMatch.json"].IgnoredPlayers == 0,
+    "settings file written with an empty ignore list")
+
+-- Ignore Juan (as a number) and Pepe (as text), then load the map again.
+Files["SSM_CommMatch.json"] = { IgnoredPlayers = { 1004, "1001" } }
+CommandStructure.LoginPlayer = function(_, player) player.commander = true return player end
+dofile(kServerFile)
+for _, p in ipairs(Players) do p.commander = false end
+Bleu.team = kTeam1Index
+State = kGameState.PreGame
+Sent = {}
+Now = 900
+Login(Bleu)
+t = Texts()
+check(#t == 5 and t[2] == "1. Ana  -20" and t[3] == "2. LZZ  -35" and t[4] == "3. Leo  +400" and t[5] == "4. Max  -600",
+    "ignored players are not listed, got:\n" .. table.concat(t, "\n"))
+check(not table.concat(t, "\n"):find("Juan") and not table.concat(t, "\n"):find("Pepe"), "Juan and Pepe left out")
+
+-- An ignored player taking a chair posts nothing.
+Bleu.commander = false
+Sent = {}
+Now = 1000
+Login(Pepe)
+check(#Sent == 0, "an ignored commander gets no list")
 
 print(string.format("%d passed, %d failed", passes, failures))
 os.exit(failures == 0 and 0 or 1)

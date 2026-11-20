@@ -187,6 +187,12 @@ other team** is closest to the new commander's, with the signed gap. Information
   enforce"). Kept per Steam ID with the side of the last list.
 - **Only the gap is shown**, not the skill numbers (`+` = above the commander, `-` = below).
   Sorted by smallest gap, ties by name.
+- **Ignored players** (author, 2026-11-19, 1.1b): some players never command but carry a default
+  commander skill, which the "exactly 0" rule cannot catch. Admins list their NS2 IDs
+  (`client:GetUserId()`, numbers or numbers as text) in `IgnoredPlayers` in
+  `config://SSM_CommMatch.json` (written empty on first run, read when the map loads). Ignored
+  players are never listed, and their own chair logins post nothing either (my call: their skill
+  means nothing as a baseline; easy to change if the author wants them compared).
 
 ### How it works (`CommMatch/Server.lua`)
 
@@ -202,12 +208,13 @@ other team** is closest to the new commander's, with the signed gap. Information
   `Countdown` or later. **Forced logins are ignored**: at round start `NS2Gamerules:ResetGame`
   rebuilds the map and calls `commandStructure:LoginPlayer(player, true)` for both commanders
   while the state is still `PreGame` and the other chair is briefly empty, which made 1.1 post
-  the list again at round start (fixed in 1.1a).
+  the list again at round start (fixed in 1.1b).
 
 ## Open threads (remind the author)
 
-- **v1.1a (not published yet):** Commander Match no longer posts at round start (forced
-  re-logins ignored, pregame states only).
+- **v1.1b (not published yet; the author: "this will all be 1.1b", no separate 1.1a):** Commander
+  Match no longer posts at round start (forced re-logins ignored, pregame states only), and
+  admins can ignore players by NS2 ID.
 - **v1.1 published and tagged 2026-11-19** (`0ad93c0`, `main`): Spectator On Connect, Commander
   Match, `!help`, `!lang`. Launch Pad had rewritten `mod.settings` back to the 1.0b description
   before that publish, so the Workshop page probably still shows the old text; the 1.1
