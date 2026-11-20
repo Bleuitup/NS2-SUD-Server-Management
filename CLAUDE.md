@@ -212,13 +212,13 @@ other team** is closest to the new commander's, with the signed gap. Information
 
 ## Open threads (remind the author)
 
-- **v1.1b (not published yet; the author: "this will all be 1.1b", no separate 1.1a):** Commander
-  Match no longer posts at round start (forced re-logins ignored, pregame states only), and
-  admins can ignore players by NS2 ID.
-- **v1.1 published and tagged 2026-11-19** (`0ad93c0`, `main`): Spectator On Connect, Commander
-  Match, `!help`, `!lang`. Launch Pad had rewritten `mod.settings` back to the 1.0b description
-  before that publish, so the Workshop page probably still shows the old text; the 1.1
-  description is restored from git and needs one more publish to reach the page.
+- **v1.1b published and tagged 2026-11-20** (`7927ba4`, `main`; the author: "this will all be
+  1.1b", no separate 1.1a): Commander Match no longer posts at round start (forced re-logins
+  ignored, pregame states only), and admins can ignore players by NS2 ID. That publish also
+  carried the 1.1 description to the Workshop page.
+- **v1.1 published and tagged 2026-11-19** (`0ad93c0`): Spectator On Connect, Commander Match,
+  `!help`, `!lang`.
+- Add the NS2 IDs to ignore to `SSM_CommMatch.json` on the live server.
 - Spanish and Portuguese texts in `Strings.lua` not reviewed by a native speaker yet.
 - AutoSpecKick off on the live server (the author's call).
 - Commander Match should use the shared chat router if it ever gets commands.
