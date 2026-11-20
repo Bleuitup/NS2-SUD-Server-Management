@@ -109,6 +109,11 @@ local function ShouldMove(client, player)
         return false
     end
 
+    -- A player whose disconnected body is still held goes straight back into it (Saved Players).
+    if SSM.SavedPlayers_IsHeld and SSM.SavedPlayers_IsHeld(steamId) then
+        return false
+    end
+
     if Reconnecting[steamId] then
         Reconnecting[steamId] = nil
         if Shared.GetTime() <= reconnectUntil then

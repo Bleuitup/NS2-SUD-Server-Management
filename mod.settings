@@ -8,7 +8,7 @@ Server tools for the NS2 Sudamerica server.
 
 The scope of this mod is bound to simplify admin workload and ease the experience of the players of NS2 Sudamerica. This mod will never enact gameplay or balance changes of any kind.
 
-Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; and the closest commander matchups before a round.
+Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; the closest commander matchups before a round; a pause for Thunderdome and passworded games; and disconnected players keeping their place in the round.
 
 [h1]Commands and language[/h1]
 [list]
@@ -40,6 +40,24 @@ Current features: consecutive rounds played and minutes played, to simplify spec
 [*]Each name shows the gap: + means above the new commander, - means below
 [*]Players who have never commanded are left out
 [/list]
+
+[h1]Pause[/h1]
+[list]
+[*]Only on Thunderdome and passworded games. When a round starts, chat says the pause is on
+[*]Type [b]pause[/b] in chat during a round to pause the game after a 5 second countdown. Each team has 4 pauses per round
+[*]To resume, someone on each team types [b]unpause[/b]. The game resumes on its own after 5 minutes
+[*]If a player disconnects, the game pauses by itself
+[/list]
+
+[h1]Disconnected players[/h1]
+[list]
+[*]If you disconnect during a round, your player stays where it was, marked [D/C], with your lifeform, weapons, upgrades and resources
+[*]Reconnect before anyone takes your place and you go straight back in
+[*]Anyone who joins your team takes your place, with everything you had
+[*]Admins, and your team's commander, can swap you back in with [b]sud_swap[/b] in the console
+[/list]
+
+The pause and the handling of disconnected players are ported from Dragon's NSL Mod.
 "
 image       = "preview.jpg"
 tag_modtype = "Tool"

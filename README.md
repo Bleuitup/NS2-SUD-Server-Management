@@ -1,7 +1,8 @@
 # NS2 SUD Server Admin
 
 Server administration quality of life for the NS2 Sudamerica server. No gameplay changes.
-Server side only: none of its code runs on players' machines.
+Mostly server side: since v1.2 the pause also runs a small part on players' machines, so the game
+clock can stand still for everyone. It does nothing unless the server pauses.
 
 ## Commands and language
 
@@ -127,3 +128,72 @@ team is closest to the new commander's, and the gap:
 
 For example `{ "IgnoredPlayers": [ 37745947, 12345678 ] }`. The NS2 ID is the number Shine and
 the Hive use for a player (the one in Shine's `UserConfig.json`). Changes apply from the next map.
+
+## Pause
+
+A pause for Thunderdome and passworded games, ported from Dragon's NSL Mod.
+
+- Only on Thunderdome servers, or while the server has a password. A password counts when it is
+  set with `sv_password`, Shine's `sh_password` or `!password`; the mod remembers it across map
+  changes. **A password from the server's launch settings cannot be seen by the mod.**
+- When a round starts, everyone gets `THUNDERDOME DETECTED: PAUSE ENABLED` or
+  `PASSWORDED GAME DETECTED: PAUSE ENABLED`.
+- Any player on a team, during a round: `pause` or `!pause` in chat, or `gpause` in the console.
+  After a countdown the game freezes; chat, voice, the scoreboard, the minimap and menus keep
+  working. On a server without a password, `!pause` answers privately that pausing is not
+  available there (plain `pause` stays quiet, since it may just be talk).
+- To resume, someone on each team types `unpause` (or `!unpause`, `resume`, `!resume`); typing it
+  again un-readies the team. The game resumes on its own after `AutoResumeAfter` seconds.
+- Each team has `PausesPerTeam` pauses per round. The command chair cannot be entered or left
+  while paused.
+- When a team player disconnects, the game pauses by itself (`PauseOnDisconnect`). That uses one
+  of the team's pauses, and pauses even when the team has none left.
+- Works without Shine: the pause's chat lines fall back to the game's own chat.
+
+### Server settings
+
+`SSM_Pause.json` in the server's config folder, created on first run:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `PauseEnabled` | `true` | `false` turns the pause off everywhere, Thunderdome included |
+| `PausesPerTeam` | 4 | Pauses per team per round |
+| `PauseCountdown` | 5 | Seconds between pausing and the game freezing |
+| `ResumeCountdown` | 5 | Seconds between both teams being ready and the game resuming |
+| `AutoResumeAfter` | 300 | Seconds paused before the game resumes on its own; 0 = never |
+| `ReadyReminderInterval` | 30 | Seconds between reminders of who still has to ready up |
+| `PauseOnDisconnect` | `true` | Pause when a team player disconnects |
+
+Whether the server has a password is kept in `SSM_PauseState.json` next to it.
+
+## Disconnected players
+
+On every server, ported from Dragon's NSL Mod.
+
+- When a player on a team disconnects during a round, their player stays where it was as
+  `[D/C] Name`, with its lifeform, upgrades, weapons, jetpack or Exo, health, personal resources
+  and the command chair. It can be killed.
+- **They reconnect while it is still there:** they go straight back into it. Spectator on
+  connect leaves them alone.
+- **Someone joins that team:** they take the body over, with everything in it. Then the original
+  starts as a spectator as usual when they come back.
+- **`sud_swap <player> <player>`** in the console puts a player into a disconnected player's body,
+  or swaps two connected players' places. A player is a name, part of one, or a Steam ID.
+  - The server console and Shine admins with `sud_swap` in their group's commands can swap
+    anyone. A group that allows everything already has it.
+  - Commanders can swap a player on their own team (or a disconnected body on it) with a
+    spectator or someone in the ready room.
+- The body, with its gear and resources, stays where it is; the person moves. Scoreboard stats
+  and Hive skill go with the person.
+- A disconnected player's body keeps its player slot, so the player cap holds: the only way to
+  use that slot is to take the body over. Lockteams still blocks joining; `sud_swap` works on
+  locked teams.
+- Bodies nobody took are removed when the round resets.
+
+### Server settings
+
+`SSM_SavedPlayers.json` in the server's config folder, created on first run:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `Enabled` | `true` | `false`: disconnecting players are not kept (`sud_swap` still swaps players) |

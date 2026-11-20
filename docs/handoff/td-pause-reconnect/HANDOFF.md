@@ -1,9 +1,35 @@
 # Handoff: pause, disconnect handling, reconnect with gear (from B2TP)
 
-Moved here from Blast to the Past on 2026-11-20. The author decided QoL features leave B2TP and live
-in SSM. **Nothing here is wired into SSM yet**: `lua/` holds the code exactly as it was built for
-B2TP v3.01 (never tested in game, never published). It sits outside `source/`, so it is never built
-into `output/`. Integrate it with the usual plan-then-agree step.
+## Agreed plan for SSM v1.2 (the author, 2026-11-20)
+
+- **Whitelist:** go ahead and rewrite the description. Dragon's NSL Mod is whitelisted and does
+  the same, and Dragon is no longer around. The mod gains Shared and Client files.
+- **Pause:** only on Thunderdome or when the server has a password. "Has a password" means
+  `sv_password`, Shine's `sh_password` or `!password`, which all go through `Server.SetPassword`.
+  The mod wraps that and remembers the result across map changes. A password set in the launch
+  settings cannot be seen. At round start, one line to everyone: `THUNDERDOME DETECTED: PAUSE
+  ENABLED` or `PASSWORDED GAME DETECTED: PAUSE ENABLED`. Pause on disconnect only where the pause
+  is on. The pause machinery itself is installed on every server and stays inert unless paused.
+- **Disconnect bodies on every server:** the player stays in place as `[D/C] Name` with
+  lifeform, gear and pres.
+- **Taking over a body:** anyone who joins a team holding a body takes it over, on every
+  server. If the original reconnects while the body is still held, they go straight back in, and
+  Spectator On Connect skips them. Once someone took it, the original lands in spectator as usual.
+- **`sud_swap <player> <player>`** (console): puts a player into a held body (NSL's
+  `sv_nslreplaceplayer`), or swaps two connected players' places, gear staying with the body.
+  Scoreboard stats and Hive skill follow the person, not the body. Who may run it:
+  - Shine admins with `sud_swap` access, and the server console.
+  - Commanders, own team only: one target on their team, the other a spectator or in the ready
+    room.
+- **Slots:** a held body keeps its player slot. Only a takeover of that body may use the slot,
+  so the 16-player cap holds. Lockteams still blocks unforced joins; `sud_swap` forces.
+- **Version:** v1.2. Credit Dragon's NSL Mod.
+
+**Ported into SSM v1.2** (`source/lua/SSM/Pause/`, `source/lua/SSM/SavedPlayers/`); this folder
+is kept as the record of the handover. Moved here from Blast to the Past on 2026-11-20, when the
+author decided QoL features leave B2TP and live in SSM. `lua/` holds the code exactly as it was
+built for B2TP v3.01 (never tested in game, never published). It sits outside `source/`, so it is
+never built into `output/`.
 
 Source of truth in the B2TP repo: branch `shelved/qol-pause-reconnect` (commits `1a3d676` pause,
 `de0aa2d` reconnect), folder `Blast to The Past/output/lua/B2TP/Thunderdome/`. B2TP's own `main`,

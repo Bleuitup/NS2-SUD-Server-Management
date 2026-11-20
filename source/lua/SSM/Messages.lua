@@ -9,7 +9,8 @@
 -- a list does not repeat the tag on every row.
 --
 -- Chat goes through Shine, which is what can color a line and send it to one player or to all.
--- Without Shine nothing is sent.
+-- Without Shine nothing is sent, except lines sent with `always` (the pause and saved players,
+-- which must work on Thunderdome servers too): those fall back to the game's own chat.
 --
 -- Console: plain lines in the caller's own console, or the server console when there is no caller.
 --
@@ -29,9 +30,32 @@ local kTextColor = { 255, 255, 255 }
 local kLanguagesFile = "SSM_Languages.json"
 SSM.kLanguages = { "en", "es", "pt" }
 
--- One chat line to one client only.
-function SSM.Notify(client, text, continued)
-    if not (client and Shine and Shine.NotifyDualColour) then
+-- Without Shine (Thunderdome servers, for example), the features that must work there anyway
+-- (the pause, saved players) use the game's own chat: plain colors, "[NS2 SUD]" as the name.
+local function SendPlainChat(target, text)
+    if not (Server.SendNetworkMessage and BuildChatMessage) then
+        return
+    end
+    local message = BuildChatMessage(false, kPrefix, -1, kTeamReadyRoom, kNeutralTeamType, text)
+    if target then
+        Server.SendNetworkMessage(target, "Chat", message, true)
+    else
+        Server.SendNetworkMessage("Chat", message, true)
+    end
+end
+
+-- One chat line to one client only. `always` sends it without Shine too (game chat).
+function SSM.Notify(client, text, continued, always)
+    if not client then
+        return
+    end
+    if not (Shine and Shine.NotifyDualColour) then
+        if always then
+            local player = client:GetControllingPlayer()
+            if player then
+                SendPlainChat(player, text)
+            end
+        end
         return
     end
 
@@ -41,8 +65,11 @@ function SSM.Notify(client, text, continued)
 end
 
 -- One chat line to everyone on the server (Shine sends to all when the target is nil).
-function SSM.NotifyAll(text, continued)
+function SSM.NotifyAll(text, continued, always)
     if not (Shine and Shine.NotifyDualColour) then
+        if always then
+            SendPlainChat(nil, text)
+        end
         return
     end
 

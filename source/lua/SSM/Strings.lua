@@ -1,6 +1,6 @@
 -- NS2 SUD Server Admin - every text the mod sends to a single player, in English, Spanish and
--- Portuguese. Missing keys fall back to English. Messages to everyone (Commander Match) stay in
--- English and are not here.
+-- Portuguese. Missing keys fall back to English. Messages to everyone (Commander Match, the pause,
+-- saved players) stay in English and are not here.
 --
 -- Spanish avoids both "tú" and "vos" where it can, since players come from all over the region;
 -- "rounds in a row" is "partidas sucesivas" (the author's term).
@@ -81,3 +81,61 @@ pt.streaks_nobody = "Nenhuma partida foi contada ainda nesta sessão."
 en.spectator_joined = "You start as a spectator. Join a team when a player slot is free."
 es.spectator_joined = "Ingresaste como espectador. Cuando se libere un lugar de jugador, ya se puede entrar a un equipo."
 pt.spectator_joined = "Você entrou como espectador. Entre em um time quando houver uma vaga de jogador livre."
+
+-- Pause (Thunderdome and passworded games)
+en.cmd_pause = "Pause the game (Thunderdome and passworded games)"
+es.cmd_pause = "Pausar la partida (Thunderdome y partidas con contraseña)"
+pt.cmd_pause = "Pausar a partida (Thunderdome e partidas com senha)"
+
+en.cmd_unpause = "Ready your team to resume a paused game"
+es.cmd_unpause = "Marcar al equipo como listo para reanudar"
+pt.cmd_unpause = "Marcar o time como pronto para retomar"
+
+en.pause_unavailable = "Pausing is only available on Thunderdome and passworded games."
+es.pause_unavailable = "La pausa solo está disponible en Thunderdome y en partidas con contraseña."
+pt.pause_unavailable = "A pausa só está disponível no Thunderdome e em partidas com senha."
+
+en.pause_none_left = "Your team is out of pauses."
+es.pause_none_left = "A tu equipo no le quedan pausas."
+pt.pause_none_left = "Seu time não tem mais pausas."
+
+-- sud_swap (console)
+en.cmd_sud_swap = "sud_swap <player> <player>: put a player into a disconnected player's place, or swap two players (admins; commanders on their own team)"
+es.cmd_sud_swap = "sud_swap <jugador> <jugador>: poner a un jugador en el lugar de uno desconectado, o intercambiar dos jugadores (admins; comandantes en su propio equipo)"
+pt.cmd_sud_swap = "sud_swap <jogador> <jogador>: colocar um jogador no lugar de um desconectado, ou trocar dois jogadores (admins; comandantes no próprio time)"
+
+en.swap_usage = "Usage: sud_swap <player> <player> (a name, part of one, or a Steam ID)"
+es.swap_usage = "Uso: sud_swap <jugador> <jugador> (un nombre, parte de uno o un Steam ID)"
+pt.swap_usage = "Uso: sud_swap <jogador> <jogador> (um nome, parte de um ou um Steam ID)"
+
+en.swap_no_access = "Only admins, and commanders for their own team, can use sud_swap."
+es.swap_no_access = "Solo los admins, y los comandantes para su propio equipo, pueden usar sud_swap."
+pt.swap_no_access = "Só admins, e comandantes para o próprio time, podem usar sud_swap."
+
+en.swap_not_found = "No player matches \"%s\"."
+es.swap_not_found = "Ningún jugador coincide con \"%s\"."
+pt.swap_not_found = "Nenhum jogador corresponde a \"%s\"."
+
+en.swap_ambiguous = "\"%s\" matches more than one player: %s"
+es.swap_ambiguous = "\"%s\" coincide con más de un jugador: %s"
+pt.swap_ambiguous = "\"%s\" corresponde a mais de um jogador: %s"
+
+en.swap_same = "Those are the same player."
+es.swap_same = "Es el mismo jugador."
+pt.swap_same = "É o mesmo jogador."
+
+en.swap_two_held = "Two disconnected players cannot be swapped."
+es.swap_two_held = "No se puede intercambiar a dos jugadores desconectados."
+pt.swap_two_held = "Não é possível trocar dois jogadores desconectados."
+
+en.swap_commander_rule = "Commanders can only swap a player on their team with a spectator or someone in the ready room."
+es.swap_commander_rule = "Los comandantes solo pueden intercambiar a un jugador de su equipo con un espectador o alguien en la sala de espera."
+pt.swap_commander_rule = "Comandantes só podem trocar um jogador do próprio time com um espectador ou alguém na sala de espera."
+
+en.swap_done = "Done."
+es.swap_done = "Listo."
+pt.swap_done = "Pronto."
+
+en.swap_failed = "The swap did not work. The server log has the details."
+es.swap_failed = "El intercambio no funcionó. El log del servidor tiene los detalles."
+pt.swap_failed = "A troca não funcionou. O log do servidor tem os detalhes."

@@ -18,7 +18,9 @@ NS2 Launch Pad layout, matching the author's other mods:
 ```
 mod.settings                       Workshop metadata and description (never put a backslash in it)
 preview.jpg                        Workshop preview, 512x512 (author's GPT artwork; Launch Pad scales it to 512)
-source/lua/entry/SSM.entry         entry: Server script only, for now
+source/lua/entry/SSM.entry         entry: Shared, Server and Client (Shared/Client only for the pause, since v1.2)
+source/lua/SSM/Shared.lua          loads Pause/Shared.lua (server, client and predict)
+source/lua/SSM/Client.lua          loads Pause/Client.lua
 source/lua/SSM/Server.lua          loads the shared files, then each feature's server file
 source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta), console print, languages
 source/lua/SSM/Strings.lua         every private text in English, Spanish and Portuguese
@@ -27,6 +29,8 @@ source/lua/SSM/<Feature>/...       one folder per feature
 test/matchesinarow.lua             logic test, runs outside the game (also !lang and !help)
 test/spectatoronconnect.lua        logic test for Spectator On Connect
 test/commmatch.lua                 logic test for Commander Match
+test/pause.lua                     logic test for the pause's server part
+test/savedplayers.lua              logic test for Saved Players (with Spectator On Connect)
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -210,7 +214,92 @@ other team** is closest to the new commander's, with the signed gap. Information
   while the state is still `PreGame` and the other chair is briefly empty, which made 1.1 post
   the list again at round start (fixed in 1.1b).
 
+## Feature: Pause (`Pause/Shared.lua`, `Pause/Server.lua`, `Pause/Client.lua`; v1.2)
+
+Ported from Dragon's NSL Mod (https://github.com/xToken/NSL, `lua/NSL/pause/*`), first for Blast
+to the Past v3.01 (never released there), handed over to SSM on 2026-11-20 when the author moved
+every QoL feature out of B2TP. The handover notes and the B2TP code as it was are in
+`docs/handoff/td-pause-reconnect/`. Credit Dragon in the description (the author asked).
+
+### Rules (author's picks, 2026-11-20)
+
+- **Only on Thunderdome or with a server password.** Password = `sv_password`, Shine's
+  `sh_password` or `!password`; all three call `Server.SetPassword`, which the mod wraps. The
+  engine keeps the password across map changes but the server Lua does not, so it is saved to
+  `config://SSM_PauseState.json` every 5 s and trusted on load only if under 120 s old (a restart
+  drops a password set with `sv_password`; a quick restart could leave pausing on for one map).
+  **A password from the launch settings is invisible** (no getter in the engine API).
+- **Round-start line to everyone:** `THUNDERDOME DETECTED: PAUSE ENABLED` /
+  `PASSWORDED GAME DETECTED: PAUSE ENABLED` (author's wording), from a post-wrap of
+  `NS2Gamerules:SetGameState` on the change to Started.
+- Pause rules as built for B2TP: any team player during a round, 5 s countdown, both teams ready
+  to resume (toggle, 2 s per team), auto-resume 300 s, reminders every 30 s, 4 pauses per team per
+  round, counts cleared at round reset, chair blocked while paused or pausing, log lines, no admin
+  override. Pause on disconnect (default on) uses a team pause but pauses even with none left.
+- `!pause` / `gpause` on a server where pausing is off answer privately; plain `pause` stays
+  quiet (may be talk). Messages to everyone are English; private ones use `Strings.lua`.
+
+### How it works
+
+- **The machinery is installed on every server** and is inert unless paused: the three Player
+  network fields (always, so client and server layouts match), the `Shared.GetTime` /
+  `GetPreviousTime` replacement, input/move/buy blocks, entity freezing. Only the command and the
+  disconnect pause check `SSMPause_GetAllowedReason()`. That is why there is no gate on clients:
+  they follow the `gamepaused` field the server sets.
+- Chat words go through vanilla `ProcessSayCommand` (every chat message reaches it), not the SSM
+  router, so they work without Shine (Thunderdome). The router does not claim them, so with Shine
+  they still pass through. Chat lines use `SSM.Notify` / `NotifyAll` with `always`, which fall back
+  to the game's own chat (`[NS2 SUD]` as the name) without Shine.
+- `SSMPause_ReplaceMethod` (Shared) replaces in a class and its derived classes and skips names
+  missing in the build; Saved Players uses it too.
+
+## Feature: Saved Players (`SavedPlayers/Server.lua`; v1.2)
+
+NSL's statesave (`lua/NSL/statesave/server.lua`), same history as the pause. Server-only.
+
+### Rules (author's picks, 2026-11-20)
+
+- **On every server**, Thunderdome, passworded or not.
+- A team player disconnecting mid-round leaves their player as `[D/C] Name`, held by a virtual
+  placeholder client: gear, lifeform, pres, health, chair. Killable. Removed at round reset.
+- **Original reconnects while held: straight back in.** Spectator On Connect's `ShouldMove` asks
+  `SSM.SavedPlayers_IsHeld(steamId)` and leaves them alone.
+- **Anyone joining a team that holds a body takes it over** ("equivalent to sud_swap, to
+  simplify"), on every server, the oldest body first. The original then lands in spectator as
+  usual and gets back in through `sud_swap`.
+- **`sud_swap <player> <player>`** (console): a player into a held body (NSL's
+  `sv_nslreplaceplayer`), or two connected players swap places (not in NSL). Access: server
+  console and Shine admins with `sud_swap` (`Shine:HasAccess`, which does not need a registered
+  command); commanders for their own team only, the other target a spectator or in the ready room.
+  Targets by Steam ID, exact name, then unique partial name; ambiguity lists the matches.
+- **The body stays, the person moves.** ScoringMixin data (score, kills, play times, Hive skill)
+  follows the person: `ScoringMixin.CopyPlayerDataFrom` only assigns fields, so it copies into
+  and out of a plain table. A person whose body someone else plays has theirs kept in `Stash` and
+  gets it back when they get a body again. The disconnect stand-in gets the person's data first,
+  because vanilla logs the disconnecting client's round from it.
+- **Slots:** the engine counts the placeholder as a player. The mod also counts held bodies on
+  top of the humans, so the cap holds whether or not the engine does. A join that takes over a
+  body bypasses the slot check and even teams (`joiningHeldTeam`), because it adds nobody.
+  Lockteams (Shine `JoinTeam` hook) still blocks unforced joins; `sud_swap` joins forced.
+
+### How it works
+
+- Wraps (all `Class_ReplaceMethod` on `NS2Gamerules` unless noted): `OnClientDisconnect` (keep
+  the body, NSL), `OnClientConnect` (placeholders get no player; the original goes back in),
+  `JoinTeam` (takeover after a successful join), `Gamerules.GetCanJoinPlayingTeam` and
+  `GetCanJoinTeamNumber` (slots), `ResetGame`, `RagdollMixin.OnTag` and
+  `Player.GetDestructionAllowed` (a held body is not removed).
+- Two connected players swap by exchanging controllers, then fixing each client's spectator flag
+  (`client:SetIsSpectator`, not `Player:SetIsSpectator`, which would JoinTeam), names and stats.
+- Untested in game: placeholders and the 21-person connection cap (a full server might keep the
+  original from reconnecting), Thunderdome auto-concede, NS2+ stats, commander bodies.
+
 ## Open threads (remind the author)
+
+- **v1.2 built on `feat/v1.2-pause-saved-players`, not tested in game, not published:** the
+  pause (Thunderdome and passworded games) and saved players (every server), with `sud_swap`.
+  First release with client files. Description drafted in `mod.settings`, including the Dragon
+  credit line - the author to review.
 
 - **v1.1b published and tagged 2026-11-20** (`7927ba4`, `main`; the author: "this will all be
   1.1b", no separate 1.1a): Commander Match no longer posts at round start (forced re-logins
@@ -251,6 +340,14 @@ Parked or dropped (2026-11-16):
 - `lua test/commmatch.lua` does the same for Commander Match: who is listed, order and gaps, the
   cooldown, the other chair taken, round started, commander at 0, bots, no Shine, and an error
   not breaking the login.
+- `lua test/pause.lua`: when pausing is allowed (pub, password set and removed, remembered across
+  a map change, not after a restart, Thunderdome, the off switch), the round-start line, pause and
+  resume with their chat lines, the per-team limit and round reset, pause on disconnect, and the
+  game-chat fallback without Shine. Not the frozen world itself.
+- `lua test/savedplayers.lua`: who is kept, the held slot, Lockteams, taking over by joining
+  (gear stays, name and stats follow the person), reconnecting straight back in with Spectator On
+  Connect leaving them alone, `sud_swap` (access, commander rule, names, swap back with stats),
+  round reset, the off switch. Not the engine hand-over itself.
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 
@@ -265,8 +362,12 @@ with Ghoul rather than slipping into an update. Before it was whitelisted, runni
 server made the server unranked and switched off consistency checking, which let some players'
 client mods desync and drop them.
 
+**v1.2 changes that** (the pause adds Shared and Client files and three Player network fields).
+The author decided on 2026-11-20 to go ahead and rewrite the description rather than ask first:
+Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer around.
+
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.
