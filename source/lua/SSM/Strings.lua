@@ -100,9 +100,9 @@ es.pause_none_left = "A tu equipo no le quedan pausas."
 pt.pause_none_left = "Seu time não tem mais pausas."
 
 -- sud_swap (console)
-en.cmd_sud_swap = "sud_swap <player> <player>: put a player into a disconnected player's place, or swap two players (admins; commanders on their own team)"
-es.cmd_sud_swap = "sud_swap <jugador> <jugador>: poner a un jugador en el lugar de uno desconectado, o intercambiar dos jugadores (admins; comandantes en su propio equipo)"
-pt.cmd_sud_swap = "sud_swap <jogador> <jogador>: colocar um jogador no lugar de um desconectado, ou trocar dois jogadores (admins; comandantes no próprio time)"
+en.cmd_sud_swap = "sud_swap <player> <player>: put a player into a disconnected player's place, or swap a player with a spectator (admins; commanders on their own team)"
+es.cmd_sud_swap = "sud_swap <jugador> <jugador>: poner a un jugador en el lugar de uno desconectado, o intercambiar a un jugador con un espectador (admins; comandantes en su propio equipo)"
+pt.cmd_sud_swap = "sud_swap <jogador> <jogador>: colocar um jogador no lugar de um desconectado, ou trocar um jogador com um espectador (admins; comandantes no próprio time)"
 
 en.swap_usage = "Usage: sud_swap <player> <player> (a name, part of one, or a Steam ID)"
 es.swap_usage = "Uso: sud_swap <jugador> <jugador> (un nombre, parte de uno o un Steam ID)"
@@ -124,9 +124,9 @@ en.swap_same = "Those are the same player."
 es.swap_same = "Es el mismo jugador."
 pt.swap_same = "É o mesmo jogador."
 
-en.swap_two_held = "Two disconnected players cannot be swapped."
-es.swap_two_held = "No se puede intercambiar a dos jugadores desconectados."
-pt.swap_two_held = "Não é possível trocar dois jogadores desconectados."
+en.swap_needs_bench = "One of the two players must be a spectator or in the ready room."
+es.swap_needs_bench = "Uno de los dos jugadores tiene que ser espectador o estar en la sala de espera."
+pt.swap_needs_bench = "Um dos dois jogadores precisa ser espectador ou estar na sala de espera."
 
 en.swap_commander_rule = "Commanders can only swap a player on their team with a spectator or someone in the ready room."
 es.swap_commander_rule = "Los comandantes solo pueden intercambiar a un jugador de su equipo con un espectador o alguien en la sala de espera."

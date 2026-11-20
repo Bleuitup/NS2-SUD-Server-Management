@@ -268,7 +268,9 @@ NSL's statesave (`lua/NSL/statesave/server.lua`), same history as the pause. Ser
   simplify"), on every server, the oldest body first. The original then lands in spectator as
   usual and gets back in through `sud_swap`.
 - **`sud_swap <player> <player>`** (console): a player into a held body (NSL's
-  `sv_nslreplaceplayer`), or two connected players swap places (not in NSL). Access: server
+  `sv_nslreplaceplayer`), or two connected players swap places (not in NSL). **One target is
+  always a spectator or in the ready room** (author, 2026-11-20): never two players on teams, so
+  never two held bodies either. Access: server
   console and Shine admins with `sud_swap` (`Shine:HasAccess`, which does not need a registered
   command); commanders for their own team only, the other target a spectator or in the ready room.
   Targets by Steam ID, exact name, then unique partial name; ambiguity lists the matches.

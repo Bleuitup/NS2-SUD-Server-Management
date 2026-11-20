@@ -352,7 +352,7 @@ check(SSM.SavedPlayers_IsHeld(4), "Pepe is kept")
 ana.player.commander = true
 check(Swap(ana, "Pepe", "Leo") == "Commanders can only swap a player on their team with a spectator or someone in the ready room.",
     "a Marine commander cannot fill an Alien body")
-check(Swap(ana, "Bleu", "Juan") == "Commanders can only swap a player on their team with a spectator or someone in the ready room.",
+check(Swap(ana, "Bleu", "Juan") == "One of the two players must be a spectator or in the ready room.",
     "nor swap with the other team")
 check(Swap(ana, "Bleu", "Leo") == "Done." and leo.player == bleuBody and bleu.player.team == kSpectatorIndex,
     "a commander swaps a teammate with a spectator")
@@ -362,6 +362,13 @@ ana.player.commander = nil
 check(Swap(nil, "Leo", "nobody") == "No player matches \"nobody\".", "unknown name")
 check(Swap(nil, "e", "Leo"):find("^\"e\" matches more than one player"), "ambiguous name")
 check(Swap(nil, "Leo", "Leo") == "Those are the same player.", "same player")
+
+-- Never two players on teams, admins and the server console included.
+local bleuTeamBefore, juanBefore = bleu.player, juan.player
+check(Swap(nil, "Bleu", "Juan") == "One of the two players must be a spectator or in the ready room."
+    and bleu.player == bleuTeamBefore and juan.player == juanBefore, "two players on teams: refused, nothing moves")
+check(Swap(nil, "Bleu", "Pepe") == "One of the two players must be a spectator or in the ready room.",
+    "a team player into a held body: refused")
 check(Swap(nil, "Leo") == "Usage: sud_swap <player> <player> (a name, part of one, or a Steam ID)", "usage")
 
 Sent = {}

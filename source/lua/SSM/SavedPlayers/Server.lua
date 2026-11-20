@@ -15,9 +15,11 @@
 --   * Anyone who joins a team that holds a body takes it over, on every server. The original then
 --     starts as a spectator as usual when they come back.
 --   * sud_swap <player> <player> (console) puts a player into a held body (NSL's
---     sv_nslreplaceplayer), or swaps two connected players' places. Shine admins with sud_swap
---     access and the server console can swap anyone. Commanders can swap a player on their own
---     team (or a held body on it) with a spectator or someone in the ready room.
+--     sv_nslreplaceplayer), or swaps two connected players' places. One of the two is always a
+--     spectator or in the ready room (author, 2026-11-20): never two players on teams. Shine
+--     admins with sud_swap access and the server console can use it on any team. Commanders only
+--     for their own team: a player on it (or a held body on it) with a spectator or someone in
+--     the ready room.
 --   * The body, with its gear and resources, stays where it is; the person moves. Scoreboard
 --     stats and Hive skill follow the person (ScoringMixin's data), so team skill, Commander Match
 --     and the end-of-round Hive report stay right.
@@ -500,8 +502,10 @@ local function OnSwap(caller, first, second)
         Reply(caller, "swap_same")
         return
     end
-    if a.held and b.held then
-        Reply(caller, "swap_two_held")
+    -- For everyone (author, 2026-11-20): never two players who are both on a team; one of them is
+    -- a spectator or in the ready room. Held bodies are always on a team, so two of them never pass.
+    if not (IsBench(a.team) or IsBench(b.team)) then
+        Reply(caller, "swap_needs_bench")
         return
     end
 

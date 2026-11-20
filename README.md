@@ -179,8 +179,10 @@ On every server, ported from Dragon's NSL Mod.
   starts as a spectator as usual when they come back.
 - **`sud_swap <player> <player>`** in the console puts a player into a disconnected player's body,
   or swaps two connected players' places. A player is a name, part of one, or a Steam ID.
-  - The server console and Shine admins with `sud_swap` in their group's commands can swap
-    anyone. A group that allows everything already has it.
+  - One of the two must be a spectator or in the ready room: it never swaps two players who are
+    both on a team (or two disconnected bodies).
+  - The server console and Shine admins with `sud_swap` in their group's commands can use it on
+    any team. A group that allows everything already has it.
   - Commanders can swap a player on their own team (or a disconnected body on it) with a
     spectator or someone in the ready room.
 - The body, with its gear and resources, stays where it is; the person moves. Scoreboard stats
