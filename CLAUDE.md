@@ -386,12 +386,10 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ## Open threads (remind the author)
 
-- **v1.3 (Join Pool) prepared 2026-11-21 on `feat/join-pool`**, committed, not merged, not
-  published, not tagged. Description in `mod.settings` (says it is still being tested), `output/`
-  rebuilt. Publishing reaches the 8v8 and the 6v6 at their next map load (inert on the 6v6
-  unless it runs Lockteams). Before publishing: a Launch Pad listen-server test (scoreboard label,
-  flash, respawn, Lockteams' join-spam counter, tournamentmode `!ready`). Merge into `main` and tag
-  `v1.3` once the author says the Workshop publish is live.
+- **v1.3 (Join Pool) published and tagged 2026-11-21** (`19b0be7`, merged into `main`). The
+  description says it is still being tested. The author retests it on the live 8v8. Still to check
+  in game: the scoreboard label, the flash, the joiners' respawn, Lockteams' join-spam counter,
+  and tournamentmode's `!ready`. Inert on the 6v6 unless it runs Lockteams.
 
 - **v1.2b published and tagged 2026-11-21** (`ea109c6`, merged into `main`): the pause
   (Thunderdome and passworded games) and saved players (every server), with `sud_swap` (one
