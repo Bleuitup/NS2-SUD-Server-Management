@@ -31,6 +31,7 @@ test/spectatoronconnect.lua        logic test for Spectator On Connect
 test/commmatch.lua                 logic test for Commander Match
 test/pause.lua                     logic test for the pause's server part
 test/savedplayers.lua              logic test for Saved Players (with Spectator On Connect)
+test/joinpool.lua                  logic test for Join Pool
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -306,7 +307,91 @@ one client fix (below).
 - Untested in game: placeholders and the 21-person connection cap (a full server might keep the
   original from reconnecting), Thunderdome auto-concede, NS2+ stats, commander bodies.
 
+## Feature: Join Pool (`JoinPool/Shared.lua`, `JoinPool/Server.lua`, `JoinPool/Client.lua`; branch `feat/join-pool`, 2026-11-21)
+
+Players waiting to get into a live 6v6 or 7v7 type `!joinq`; when two of them can come in, one
+per team, within the elo limit, they are asked to `!ready` and placed. Replaces admins pairing
+joiners by hand. The pair maths started as the balanced queue of Lockteams v2 2.3 (never released;
+kept in `Shine-Lockteams-join-queue-2.3.bundle` next to the Lockteams repo, whose local `main` was
+reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.21` was kept).
+
+### Rules (author's picks, 2026-11-21)
+
+- **Limit 75** (`MaxDifference`), from the author's post-shuffle gap study (commander-elo
+  shuffles, 8v8 pub: median gap 16, p90 53, p95 72). The gap after the pair joins must be within
+  it; if the game is already further apart, any pair that makes it smaller is allowed.
+- **Team averages:** fielders at their field skill for that team (`skill ± skillOffset`), the
+  commander at their commander skill for that team (`ScoringMixin:GetCommanderTeamSkill`). Joiners
+  are fielders. The new average is `(team sum + joiner) / (size + 1)`.
+- **Only 6v6 and 7v7** (`TeamSizes`), both teams the same size. **Uneven teams are shelved:** they
+  usually mean a crash, and Saved Players holds the body, which a joiner would take over. Any
+  virtual client on a team (held body, bot) pauses the pool. Idea for later (author): a joiner
+  could `!ready` to take the crashed player's place and give it back when they return.
+- **Live rounds only** (game state Started): typing the commands shows the player is there. The
+  pool empties when the round ends; `ResetGame` also switches an admin `off` back on.
+- **Who:** spectators and the ready room. Spectators need a free player slot (reserved slots
+  only with access), checked here without vanilla's join-error popup; ready-room players are seated
+  first because they already hold one.
+- **Best pair:** every pair, both ways round; smallest gap after wins; ties go to whoever waited
+  longest (lowest sum of queue positions). One pair is asked at a time.
+- **Messages:** everyone but the pair gets "X (Marines) and Y (Aliens) are the best suitable
+  joiners. Elo difference now: +75 Marines. After joining: +20 Aliens. They have 30 seconds to type
+  !ready." (author's wording, tidied). The pair get a private line each. **Every line goes to each
+  player in their own language**, the public ones too (sent one by one, so `!lang` applies),
+  unlike the other features, where messages to everyone stay English.
+- **`!ready` within 30 s** (`ReadySeconds`). Whoever does not type it leaves the pool; whoever
+  did stays and can be paired again at once. When both are ready the pair is re-checked against
+  the teams as they are (still even, allowed size, slots, limit); otherwise cancelled, both stay.
+- **Lockteams is required** (author, 2026-11-21, after the first build ran without it): the pool
+  only runs with Lockteams v2 loaded and enabled and its teams locked ("otherwise people can come
+  and go all the time and mess it up"). `!joinq` is refused otherwise (`joinpool_no_lockteams`,
+  `joinpool_not_locked`). **Unlocked mid-round: kept, paused** (author's pick): members are told once
+  (`joinpool_unlocked`), a pending pair is cancelled, nobody is offered; locked again, they are told
+  (`joinpool_relocked`) and it runs. `LockState()` reads `Shine.Plugins.lockteamsv2`.
+- **Lifting the lock for the joins:** the author's rule is "check its status, disable it, get them in, re-enable it".
+  Done on `Shine.Plugins.lockteamsv2.TeamLock` (false for the two joins, back to true after, even on
+  error), not its lock/unlock commands, which would announce both to the server.
+- **Normal joins, not forced:** `NS2Gamerules:JoinTeam(player, team)`. A forced join spawns the
+  player at once (`ReplaceRespawnPlayer`); unforced, they go through the respawn queue like anyone
+  joining mid-round. If the second join fails, the first is moved back (forced, to where it was).
+- **AFK kick:** queued players get `afkkick:ResetAFKTime` every 10 s, so Shine's kick-on-full
+  never picks them while they wait. The `!ready` deadline catches anyone who walked away.
+- **Commands:** `!joinq`, `!exitq`, `!listq`, `!ready` (chat router; the author: "!exitq is more
+  language friendly"); `sud_joinpool on|off` (console), for the current round; **on by default**,
+  every round starts on (author's pick). Access: the server console and **every Shine admin**,
+  i.e. anyone with Shine user data (`Shine:GetUserData`), no group config needed (author:
+  "naturally Shine admins should have access"); on the 8v8 that includes the TrustedPlayer group.
+  Explicit Shine access to `sud_joinpool` also works.
+- **Scoreboard:** queued players show `SUD Queue` in the status column of the spectator / ready
+  room block (author's label). **Taskbar:** the pair's game window flashes
+  (`Client.WindowNeedsAttention`, the call the game uses when a round starts).
+
+### How it works
+
+- `UpdateServer` once a second: drop pool members who left or got on a team, expire the pending
+  pair, otherwise look for the best pair. Skill comes from the live entities.
+- Network (`JoinPool/Shared.lua`): `SSM_JoinPoolQueue` (client ids as `,5,12,`, to everyone on
+  change and every 5 s, so later connects get it) and `SSM_JoinPoolAttention` (to the pair).
+  Client ids are `client:GetId()`, which is what the scoreboard's `ClientIndex` holds.
+- `JoinPool/Client.lua` wraps `GUIScoreboard:UpdateTeam` on the first client update after the
+  class exists, after the original has drawn the row, in a `pcall`.
+- **New client files and network messages:** server and clients must run the same mod version.
+  Publish before the server runs it.
+
+### Not checked in game yet
+
+- The scoreboard label and the flash; that `!ready` does not clash with Shine tournamentmode's
+  `!ready` / `!rdy` if that plugin is on; the two joiners' respawn; Lockteams' own join-spam counter
+  not firing on these joins.
+
 ## Open threads (remind the author)
+
+- **v1.3 (Join Pool) prepared 2026-11-21 on `feat/join-pool`**, committed, not merged, not
+  published, not tagged. Description in `mod.settings` (says it is still being tested), `output/`
+  rebuilt. Publishing reaches the 8v8 and the 6v6 at their next map load (inert on the 6v6
+  unless it runs Lockteams). Before publishing: a Launch Pad listen-server test (scoreboard label,
+  flash, respawn, Lockteams' join-spam counter, tournamentmode `!ready`). Merge into `main` and tag
+  `v1.3` once the author says the Workshop publish is live.
 
 - **v1.2b published and tagged 2026-11-21** (`ea109c6`, merged into `main`): the pause
   (Thunderdome and passworded games) and saved players (every server), with `sud_swap` (one
@@ -360,6 +445,7 @@ Parked or dropped (2026-11-16):
   a map change, not after a restart, Thunderdome, the off switch), the round-start line, pause and
   resume with their chat lines, the per-team limit and round reset, pause on disconnect, and the
   game-chat fallback without Shine. Not the frozen world itself.
+- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, Spanish. 76 checks.
 - `lua test/savedplayers.lua`: who is kept, the held slot, Lockteams, taking over by joining
   (gear stays, name and stats follow the person), reconnecting straight back in with Spectator On
   Connect leaving them alone, `sud_swap` (access, commander rule, names, swap back with stats),
@@ -384,6 +470,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

@@ -8,7 +8,7 @@ Server tools for the NS2 Sudamerica server.
 
 The scope of this mod is bound to simplify admin workload and ease the experience of the players of NS2 Sudamerica. This mod will never enact gameplay or balance changes of any kind.
 
-Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; the closest commander matchups before a round; a pause for Thunderdome and passworded games; and disconnected players keeping their place in the round.
+Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; the closest commander matchups before a round; a pause for Thunderdome and passworded games; disconnected players keeping their place in the round; and a join pool that pairs up players waiting to get into a 6v6 or 7v7.
 
 [h1]Commands and language[/h1]
 [list]
@@ -55,6 +55,17 @@ Current features: consecutive rounds played and minutes played, to simplify spec
 [*]Reconnect before anyone takes your place and you go straight back in
 [*]Anyone who joins your team takes your place, with everything you had
 [*]Admins, and your team's commander, can swap you back in with [b]sud_swap[/b] in the console
+[/list]
+
+[h1]Join pool[/h1]
+New in 1.3 and still being tested on live games.
+[list]
+[*]During a live 6v6 or 7v7 with the teams locked, type [b]!joinq[/b] from spectator or the ready room to wait for a place. The scoreboard shows you as SUD Queue
+[*]When you and another waiting player can join, one per team, and keep the difference in the teams' average elo within 75, chat announces you both and you get 30 seconds to type [b]!ready[/b]. Your game window flashes on the taskbar
+[*]Once both of you are ready, you join the teams that keep the game closest. Marine and alien skill differ for each player, so the server also picks who goes where
+[*]Miss the 30 seconds and you leave the pool. The other player keeps their place
+[*][b]!exitq[/b] leaves the pool, [b]!listq[/b] shows who is waiting
+[*]Admins can switch it off for the rest of the round with [b]sud_joinpool off[/b] in the console
 [/list]
 
 The pause and the handling of disconnected players are ported from Dragon's NSL Mod.

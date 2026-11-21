@@ -139,3 +139,156 @@ pt.swap_done = "Pronto."
 en.swap_failed = "The swap did not work. The server log has the details."
 es.swap_failed = "El intercambio no funcionó. El log del servidor tiene los detalles."
 pt.swap_failed = "A troca não funcionou. O log do servidor tem os detalhes."
+
+-- Join Pool. Team names stay as the game shows them in every language.
+en.team_marines = "Marines"
+es.team_marines = "Marines"
+pt.team_marines = "Marines"
+
+en.team_aliens = "Aliens"
+es.team_aliens = "Aliens"
+pt.team_aliens = "Aliens"
+
+en.cmd_joinq = "Wait in the join pool during a live 6v6 or 7v7 with the teams locked (spectators and ready room)"
+es.cmd_joinq = "Esperar en la cola para entrar durante una partida 6v6 o 7v7 en curso con los equipos bloqueados (espectadores y sala de espera)"
+pt.cmd_joinq = "Esperar na fila para entrar durante uma partida 6v6 ou 7v7 em andamento com os times travados (espectadores e sala de espera)"
+
+en.cmd_exitq = "Leave the join pool"
+es.cmd_exitq = "Salir de la cola para entrar"
+pt.cmd_exitq = "Sair da fila para entrar"
+
+en.cmd_listq = "Who is in the join pool"
+es.cmd_listq = "Quién está en la cola para entrar"
+pt.cmd_listq = "Quem está na fila para entrar"
+
+en.cmd_ready = "Confirm when the join pool asks you to"
+es.cmd_ready = "Confirmar cuando la cola para entrar lo pida"
+pt.cmd_ready = "Confirmar quando a fila para entrar pedir"
+
+en.cmd_sud_joinpool = "sud_joinpool on|off: switch the join pool on or off for this round (admins)"
+es.cmd_sud_joinpool = "sud_joinpool on|off: activar o desactivar la cola para entrar en esta partida (admins)"
+pt.cmd_sud_joinpool = "sud_joinpool on|off: ligar ou desligar a fila para entrar nesta partida (admins)"
+
+en.joinpool_off = "The join pool is switched off."
+es.joinpool_off = "La cola para entrar está desactivada."
+pt.joinpool_off = "A fila para entrar está desligada."
+
+en.joinpool_not_live = "The join pool only runs during a live round."
+es.joinpool_not_live = "La cola para entrar solo funciona con una partida en curso."
+pt.joinpool_not_live = "A fila para entrar só funciona com uma partida em andamento."
+
+en.joinpool_on_team = "You are already on a team."
+es.joinpool_on_team = "Ya está en un equipo."
+pt.joinpool_on_team = "Você já está em um time."
+
+en.joinpool_no_lockteams = "The join pool needs Lockteams, which is not running on this server."
+es.joinpool_no_lockteams = "La cola para entrar necesita Lockteams, que no está activo en este servidor."
+pt.joinpool_no_lockteams = "A fila para entrar precisa do Lockteams, que não está ativo neste servidor."
+
+en.joinpool_not_locked = "The teams are not locked, so you can join a team directly. The join pool only runs while the teams are locked."
+es.joinpool_not_locked = "Los equipos no están bloqueados, así que se puede entrar a un equipo directamente. La cola para entrar solo funciona con los equipos bloqueados."
+pt.joinpool_not_locked = "Os times não estão travados, então dá para entrar em um time direto. A fila para entrar só funciona com os times travados."
+
+en.joinpool_unlocked = "The teams were unlocked, so you can join a team directly. The join pool is paused until they are locked again; you keep your place."
+es.joinpool_unlocked = "Se desbloquearon los equipos, así que se puede entrar a un equipo directamente. La cola para entrar queda en pausa hasta que se vuelvan a bloquear; el lugar se mantiene."
+pt.joinpool_unlocked = "Os times foram destravados, então dá para entrar em um time direto. A fila para entrar fica pausada até travarem de novo; você mantém o lugar."
+
+en.joinpool_relocked = "The teams are locked again, so the join pool is running again."
+es.joinpool_relocked = "Los equipos se volvieron a bloquear, así que la cola para entrar funciona otra vez."
+pt.joinpool_relocked = "Os times foram travados de novo, então a fila para entrar voltou a funcionar."
+
+en.joinpool_already ="You are already in the join pool (%d waiting)."
+es.joinpool_already = "Ya está en la cola para entrar (%d esperando)."
+pt.joinpool_already = "Você já está na fila para entrar (%d esperando)."
+
+en.joinpool_added = "You are in the join pool (%d waiting). When you and another player can join and keep the teams within %d elo, you will be asked to type !ready."
+es.joinpool_added = "Está en la cola para entrar (%d esperando). Cuando haya otro jugador con quien entrar manteniendo los equipos a menos de %d de elo, se pedirá escribir !ready."
+pt.joinpool_added = "Você está na fila para entrar (%d esperando). Quando você e outro jogador puderem entrar mantendo os times a menos de %d de elo, vamos pedir para digitar !ready."
+
+en.joinpool_left = "You left the join pool."
+es.joinpool_left = "Salió de la cola para entrar."
+pt.joinpool_left = "Você saiu da fila para entrar."
+
+en.joinpool_not_in = "You are not in the join pool."
+es.joinpool_not_in = "No está en la cola para entrar."
+pt.joinpool_not_in = "Você não está na fila para entrar."
+
+en.joinpool_list = "Join pool (%d): %s"
+es.joinpool_list = "Cola para entrar (%d): %s"
+pt.joinpool_list = "Fila para entrar (%d): %s"
+
+en.joinpool_list_empty = "Nobody is in the join pool."
+es.joinpool_list_empty = "No hay nadie en la cola para entrar."
+pt.joinpool_list_empty = "Não há ninguém na fila para entrar."
+
+en.joinpool_ready_none = "Nobody has asked you to type !ready."
+es.joinpool_ready_none = "No hay ningún pedido de !ready pendiente."
+pt.joinpool_ready_none = "Ninguém pediu para você digitar !ready."
+
+en.joinpool_ready_wait = "Ready. Waiting for %s."
+es.joinpool_ready_wait = "Listo. Esperando a %s."
+pt.joinpool_ready_wait = "Pronto. Esperando %s."
+
+en.joinpool_pair_public = "%s (Marines) and %s (Aliens) are the best suitable joiners. Elo difference now: %s. After joining: %s. They have %d seconds to type !ready."
+es.joinpool_pair_public = "%s (Marines) y %s (Aliens) son los jugadores más adecuados para entrar. Diferencia de elo ahora: %s. Después de entrar: %s. Tienen %d segundos para escribir !ready."
+pt.joinpool_pair_public = "%s (Marines) e %s (Aliens) são os jogadores mais adequados para entrar. Diferença de elo agora: %s. Depois de entrar: %s. Eles têm %d segundos para digitar !ready."
+
+en.joinpool_pair_you = "You and %s can join now, you on %s. Type !ready within %d seconds."
+es.joinpool_pair_you = "Hay lugar para entrar junto con %s, en %s. Para entrar, escribir !ready en los próximos %d segundos."
+pt.joinpool_pair_you = "Você e %s podem entrar agora, você nos %s. Digite !ready nos próximos %d segundos."
+
+en.joinpool_done = "%s joined Marines and %s joined Aliens. Elo difference now: %s."
+es.joinpool_done = "%s entró a Marines y %s entró a Aliens. Diferencia de elo ahora: %s."
+pt.joinpool_done = "%s entrou nos Marines e %s entrou nos Aliens. Diferença de elo agora: %s."
+
+en.joinpool_cancel_you = "The teams changed, so that join would no longer keep them within %d elo. You stay in the join pool."
+es.joinpool_cancel_you = "Los equipos cambiaron y esa entrada ya no los mantendría a menos de %d de elo. Sigue en la cola para entrar."
+pt.joinpool_cancel_you = "Os times mudaram e essa entrada já não os manteria a menos de %d de elo. Você continua na fila para entrar."
+
+en.joinpool_cancel_public = "The teams changed, so %s and %s will not join after all."
+es.joinpool_cancel_public = "Los equipos cambiaron, así que %s y %s finalmente no entran."
+pt.joinpool_cancel_public = "Os times mudaram, então %s e %s não vão entrar afinal."
+
+en.joinpool_failed_you = "The server could not put you on the team. You stay in the join pool."
+es.joinpool_failed_you = "El servidor no pudo hacer la entrada a los equipos. Sigue en la cola para entrar."
+pt.joinpool_failed_you = "O servidor não conseguiu colocar você no time. Você continua na fila para entrar."
+
+en.joinpool_expired_you = "You did not type !ready in time and left the join pool. Type !joinq to wait again."
+es.joinpool_expired_you = "No se escribió !ready a tiempo y salió de la cola para entrar. Con !joinq se vuelve a esperar."
+pt.joinpool_expired_you = "Você não digitou !ready a tempo e saiu da fila para entrar. Digite !joinq para esperar de novo."
+
+en.joinpool_expired_other = "%s did not type !ready in time. You stay in the join pool."
+es.joinpool_expired_other = "%s no escribió !ready a tiempo. Sigue en la cola para entrar."
+pt.joinpool_expired_other = "%s não digitou !ready a tempo. Você continua na fila para entrar."
+
+en.joinpool_expired_public = "Not ready in time: %s. Looking for another pair."
+es.joinpool_expired_public = "No confirmaron a tiempo: %s. Buscando otro par."
+pt.joinpool_expired_public = "Não confirmaram a tempo: %s. Procurando outro par."
+
+en.joinpool_partner_left = "The other player left the join pool. You stay in it."
+es.joinpool_partner_left = "El otro jugador salió de la cola para entrar. Sigue en ella."
+pt.joinpool_partner_left = "O outro jogador saiu da fila para entrar. Você continua nela."
+
+en.joinpool_round_over = "The round is over, so the join pool was cleared."
+es.joinpool_round_over = "La partida terminó, así que se vació la cola para entrar."
+pt.joinpool_round_over = "A partida terminou, então a fila para entrar foi esvaziada."
+
+en.joinpool_no_access = "Only admins can switch the join pool."
+es.joinpool_no_access = "Solo los admins pueden activar o desactivar la cola para entrar."
+pt.joinpool_no_access = "Só admins podem ligar ou desligar a fila para entrar."
+
+en.joinpool_usage = "Usage: sud_joinpool on|off"
+es.joinpool_usage = "Uso: sud_joinpool on|off"
+pt.joinpool_usage = "Uso: sud_joinpool on|off"
+
+en.joinpool_admin_off = "An admin switched the join pool off for this round."
+es.joinpool_admin_off = "Un admin desactivó la cola para entrar en esta partida."
+pt.joinpool_admin_off = "Um admin desligou a fila para entrar nesta partida."
+
+en.joinpool_admin_on = "An admin switched the join pool back on."
+es.joinpool_admin_on = "Un admin volvió a activar la cola para entrar."
+pt.joinpool_admin_on = "Um admin ligou de novo a fila para entrar."
+
+en.joinpool_admin_off_you = "The join pool was switched off for this round, so you are no longer in it."
+es.joinpool_admin_off_you = "La cola para entrar se desactivó en esta partida, así que ya no está en ella."
+pt.joinpool_admin_off_you = "A fila para entrar foi desligada nesta partida, então você não está mais nela."

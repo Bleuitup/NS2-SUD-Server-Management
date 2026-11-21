@@ -4,6 +4,7 @@ Server administration quality of life for the NS2 Sudamerica server. No gameplay
 Mostly server side: since v1.2 the pause also runs a small part on players' machines, so the game
 clock can stand still for everyone. It does nothing unless the server pauses. Disconnected players
 have one small client part too, which sets up the use prompt for a player who takes over a body.
+The join pool (v1.3) has one as well: the `SUD Queue` label on the scoreboard and the taskbar flash.
 
 ## Commands and language
 
@@ -200,3 +201,44 @@ On every server, ported from Dragon's NSL Mod.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | `false`: disconnecting players are not kept (`sud_swap` still swaps players) |
+
+## Join pool
+
+During a live 6v6 or 7v7 round, players waiting to get in no longer need an admin to pair them.
+
+- **`!joinq`** (spectators and the ready room, live rounds only) puts a player in the join pool.
+  The scoreboard shows them as `SUD Queue`. `!exitq` leaves it, `!listq` lists who is in it.
+- When two players in the pool can join, one per team, and keep the difference between the team
+  averages within 75 elo, everyone else sees who they are and the difference now and after, and
+  the two are asked privately to type **`!ready`** within 30 seconds. Their game window flashes on
+  the taskbar.
+- Team averages: fielders at their field skill for that team, commanders at their commander skill
+  for that team. Marine and alien skill differ per player, so every pair is tried both ways round;
+  the pair and way round that leaves the smallest difference wins. If the game is already further
+  apart than 75, a pair that brings it closer is allowed.
+- Once both typed `!ready`, the pair is checked again against the teams as they are then and put
+  in. They join like anyone else (respawn queue, no instant spawn). The lock is lifted for those
+  two joins and put straight back, without a chat message.
+- **Needs Lockteams, with the teams locked.** Without a lock people come and go freely and break
+  the pairing, so `!joinq` is refused unless [Shine] Lockteams V2 is running and the teams are
+  locked. If an admin unlocks the teams mid-round, the pool keeps everyone but pauses (they are told
+  once, and a pair waiting on `!ready` is cancelled) until the teams are locked again.
+- Whoever does not type `!ready` in time leaves the pool; whoever did stays and can be paired again.
+- Uneven teams (usually someone who crashed, whose body Disconnected players keeps) and 8v8 are
+  left alone, and so is a team holding a disconnected body.
+- The pool empties when the round ends. Players in it are not kicked by Shine's AFK kick while they
+  wait; the 30-second `!ready` deadline catches anyone who walked away.
+- It is on by default. **`sud_joinpool off`** / **`on`** in the console switches it for the rest of
+  the round; the next round starts on again. The server console and every Shine admin (anyone in
+  a Shine user group) can use it, with no config change.
+
+### Server settings
+
+`SSM_JoinPool.json` in the server's config folder, created on first run:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `Enabled` | `true` | `false`: the join pool is off |
+| `MaxDifference` | `75` | largest team-average difference a pair may leave |
+| `ReadySeconds` | `30` | time the pair has to type `!ready` |
+| `TeamSizes` | `[6, 7]` | team sizes (per team, both equal) the pool runs at |
