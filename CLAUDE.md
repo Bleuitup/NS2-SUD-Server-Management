@@ -308,10 +308,14 @@ one client fix (below).
 
 ## Open threads (remind the author)
 
-- **v1.2 built on `feat/v1.2-pause-saved-players`, not tested in game, not published:** the
-  pause (Thunderdome and passworded games) and saved players (every server), with `sud_swap`.
-  First release with client files. Description drafted in `mod.settings`, including the Dragon
-  credit line - the author to review.
+- **v1.2b published and tagged 2026-11-21** (`ea109c6`, merged into `main`): the pause
+  (Thunderdome and passworded games) and saved players (every server), with `sud_swap` (one
+  target always on the bench) and the GitHub issue #1 fixes. First release with client files;
+  description with the Dragon credit line approved by the author. An earlier v1.2 upload
+  (Workshop, 2026-11-20 23:30 UTC, LZZ tested it on the 8v8) has no tag.
+- **Issue #1 still open:** close it once a swap in game shows no script error and no "(2)". Still
+  to check in game: the 21-person cap with a placeholder, Thunderdome auto-concede, NS2+ stats,
+  commander bodies.
 
 - **v1.1b published and tagged 2026-11-20** (`7927ba4`, `main`; the author: "this will all be
   1.1b", no separate 1.1a): Commander Match no longer posts at round start (forced re-logins
