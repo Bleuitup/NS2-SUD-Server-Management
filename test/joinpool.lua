@@ -487,5 +487,29 @@ p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 Say(p1, "!lang es"); Say(p1, "!joinq")
 check(Has(p1, "Está en la cola para entrar"), "Spanish reply")
 
+-- Thunderdome: off by default, on with EnabledOnThunderdome or an admin's sud_joinpool on.
+Reset(); m, a = Teams(6)
+Shared.GetThunderdomeEnabled = function() return true end
+check(Files["SSM_JoinPool.json"].EnabledOnThunderdome == false, "config written with EnabledOnThunderdome false")
+p1 = NewPlayer("P1", kSpectatorIndex, 1000); p2 = NewPlayer("P2", kSpectatorIndex, 1000)
+Say(p1, "!joinq")
+check(Has(p1, "off on Thunderdome games") and #SSM.JoinPool_GetPool() == 0, "Thunderdome: !joinq refused")
+local tdAdmin = NewPlayer("TDAdmin", kSpectatorIndex, 1000)
+Admins[tdAdmin.client] = true
+Hooks.Console_sud_joinpool(tdAdmin.client, "on")
+Say(p1, "!joinq"); Say(p2, "!joinq"); Run(1.5)
+check(#SSM.JoinPool_GetPool() == 2 and SSM.JoinPool_GetProposal() ~= nil, "Thunderdome: an admin's on works for the round")
+-- The setting: reload the server file with it on.
+Reset(); m, a = Teams(6)
+Files["SSM_JoinPool.json"] = { OfferDelaySeconds = 0, EnabledOnThunderdome = true }
+SSM = nil
+for _, file in ipairs(kSharedFiles) do dofile(file) end
+dofile(kServerFile)
+Hooks.UpdateServer()
+p1 = NewPlayer("P1", kSpectatorIndex, 1000)
+Say(p1, "!joinq")
+check(#SSM.JoinPool_GetPool() == 1, "Thunderdome: EnabledOnThunderdome true turns it on")
+Shared.GetThunderdomeEnabled = nil
+
 print(string.format("%d passed, %d failed", passes, failures))
 if failures > 0 then os.exit(1) end

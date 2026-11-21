@@ -119,6 +119,7 @@ team is closest to the new commander's, and the gap:
   and Alien chair skips that wait, and another player taking a chair is never held back by it.
   Only in pregame: never during the countdown or when the round starts (the game logging the
   commanders back in at round start does not count).
+- Off on Thunderdome unless `EnabledOnThunderdome` is set.
 - Needs Shine for the chat message. Nothing is enforced.
 
 ### Server settings
@@ -127,6 +128,7 @@ team is closest to the new commander's, and the gap:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
+| `EnabledOnThunderdome` | `false` | `true` also posts the list on Thunderdome games |
 | `IgnoredPlayers` | `[]` | NS2 IDs left out of the lists, for players who never command but carry a default commander skill. If one takes a chair, the list still goes out |
 
 For example `{ "IgnoredPlayers": [ 37745947, 12345678 ] }`. The NS2 ID is the number Shine and
@@ -241,6 +243,7 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | `false`: the join pool is off |
+| `EnabledOnThunderdome` | `false` | `true` also runs it on Thunderdome games; an admin's `sud_joinpool on` turns it on there for one round |
 | `MaxDifference` | `75` | largest team-average difference a pair may leave |
 | `ReadySeconds` | `30` | time the pair has to type `!ready` |
 | `OfferDelaySeconds` | `30` | no pair is offered before this many seconds into the round, so the best pair of everyone who asked is picked, not the first two |

@@ -276,5 +276,28 @@ Now = 1000
 Login(Pepe)
 check(#Sent > 0 and Sent[1].text:find("^Pepe took Alien") ~= nil and not Texts()[2]:find("Pepe"), "an ignored commander still gets a list")
 
+-- Thunderdome: off unless EnabledOnThunderdome is true.
+check(Files["SSM_CommMatch.json"].EnabledOnThunderdome == nil or Files["SSM_CommMatch.json"].EnabledOnThunderdome == false,
+    "EnabledOnThunderdome is off unless set")
+Shared.GetThunderdomeEnabled = function() return true end
+Files["SSM_CommMatch.json"] = { IgnoredPlayers = {} }
+dofile(kServerFile)
+check(Files["SSM_CommMatch.json"].EnabledOnThunderdome == false, "the setting is written, off")
+for _, p in ipairs(Players) do p.commander = false end
+Bleu.team = kTeam1Index
+Sent = {}
+Now = 2000
+Login(Bleu)
+check(#Sent == 0, "Thunderdome: no list")
+
+Files["SSM_CommMatch.json"] = { IgnoredPlayers = {}, EnabledOnThunderdome = true }
+dofile(kServerFile)
+for _, p in ipairs(Players) do p.commander = false end
+Sent = {}
+Now = 3000
+Login(Bleu)
+check(#Sent > 0 and Sent[1].text:find("^Bleu took Marine") ~= nil, "Thunderdome with EnabledOnThunderdome: the list goes out")
+Shared.GetThunderdomeEnabled = nil
+
 print(string.format("%d passed, %d failed", passes, failures))
 os.exit(failures == 0 and 0 or 1)

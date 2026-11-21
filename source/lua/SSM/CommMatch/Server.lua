@@ -23,6 +23,8 @@
 --     carry a default commander skill. Ignored players are never listed; if one takes a chair,
 --     the list still goes out as for anyone (the author's pick). The list is IgnoredPlayers in
 --     config://SSM_CommMatch.json, read when the map loads.
+--   * Off on Thunderdome by default (author, 2026-11-21): EnabledOnThunderdome (false) in the same
+--     file turns it on there.
 --
 -- Commander skill per team is the game's own: the Hive gives one commander skill plus an offset,
 -- Marines are skill + offset and Aliens skill - offset (ScoringMixin:GetCommanderTeamSkill).
@@ -41,13 +43,25 @@ local LastPost = {}
 
 -- Settings: IgnoredPlayers is a list of NS2 IDs (numbers, or numbers written as text).
 local kSettingsFile = "SSM_CommMatch.json"
-local Settings = LoadConfigFile(kSettingsFile, { IgnoredPlayers = {} })
+local Settings = LoadConfigFile(kSettingsFile, { IgnoredPlayers = {}, EnabledOnThunderdome = false })
 if type(Settings) ~= "table" then
     Settings = {}
 end
+local settingsChanged = false
 if type(Settings.IgnoredPlayers) ~= "table" then
     Settings.IgnoredPlayers = {}
+    settingsChanged = true
+end
+if type(Settings.EnabledOnThunderdome) ~= "boolean" then
+    Settings.EnabledOnThunderdome = false
+    settingsChanged = true
+end
+if settingsChanged then
     SaveConfigFile(kSettingsFile, Settings)
+end
+
+local function GetIsThunderdome()
+    return Shared.GetThunderdomeEnabled ~= nil and Shared.GetThunderdomeEnabled() == true
 end
 
 local Ignored = {}   -- [NS2 ID] = true
@@ -163,6 +177,10 @@ local function OnCommanderLogin(commander, forced)
     -- round starts: ResetGame rebuilds the map and logs both commanders in again while the state
     -- is still PreGame (fixed in 1.1b; 1.1 posted the list again at round start).
     if forced then
+        return
+    end
+
+    if GetIsThunderdome() and not Settings.EnabledOnThunderdome then
         return
     end
 

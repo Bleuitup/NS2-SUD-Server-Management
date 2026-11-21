@@ -183,6 +183,8 @@ other team** is closest to the new commander's, with the signed gap. Information
 
 ### Rules (author's picks, 2026-11-16)
 
+- **Off on Thunderdome by default** (author, 2026-11-21, v1.3b): `EnabledOnThunderdome` (false) in
+  `SSM_CommMatch.json` turns it on there.
 - **Everyone sees it** (`SSM.NotifyAll`, Shine broadcast).
 - **Anyone connected can be listed**, any team, the commander's own team and spectators included.
   Bots never.
@@ -319,6 +321,9 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ### Rules (author's picks, 2026-11-21)
 
+- **Off on Thunderdome by default** (author, 2026-11-21, v1.3b): `EnabledOnThunderdome` (false);
+  an admin's `sud_joinpool on` lifts it for the round (`onThisRound`). `!joinq` there answers
+  `joinpool_thunderdome`.
 - **Limit 75** (`MaxDifference`), from the author's post-shuffle gap study (commander-elo
   shuffles, 8v8 pub: median gap 16, p90 53, p95 72). The gap after the pair joins must be within
   it; if the game is already further apart, any pair that makes it smaller is allowed.
@@ -478,6 +483,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: no Spectator On Connect on Thunderdome). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

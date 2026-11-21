@@ -173,6 +173,10 @@ en.joinpool_off = "The join pool is switched off."
 es.joinpool_off = "La cola para entrar está desactivada."
 pt.joinpool_off = "A fila para entrar está desligada."
 
+en.joinpool_thunderdome = "The join pool is off on Thunderdome games."
+es.joinpool_thunderdome = "La cola para entrar está desactivada en las partidas de Thunderdome."
+pt.joinpool_thunderdome = "A fila para entrar está desligada nas partidas do Thunderdome."
+
 en.joinpool_not_live = "The join pool only runs during a live round."
 es.joinpool_not_live = "La cola para entrar solo funciona con una partida en curso."
 pt.joinpool_not_live = "A fila para entrar só funciona com uma partida em andamento."

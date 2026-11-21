@@ -39,6 +39,7 @@ Current features: consecutive rounds played and minutes played, to simplify spec
 [*]Before a round starts, when someone takes a command chair and the other team has no commander yet, chat shows the 5 players whose commander skill for the other team is closest
 [*]Each name shows the gap: + means above the new commander, - means below
 [*]Players who have never commanded are left out
+[*]Not on Thunderdome games
 [/list]
 
 [h1]Pause[/h1]
@@ -67,6 +68,7 @@ New in 1.3 and still being tested on live games.
 [*]Miss the 30 seconds and you leave the pool. The other player keeps their place
 [*][b]!exitq[/b] leaves the pool, [b]!listq[/b] shows who is waiting
 [*]Admins can switch it off for the rest of the round with [b]sud_joinpool off[/b] in the console
+[*]Off on Thunderdome games
 [/list]
 
 The pause and the handling of disconnected players are ported from Dragon's NSL Mod.

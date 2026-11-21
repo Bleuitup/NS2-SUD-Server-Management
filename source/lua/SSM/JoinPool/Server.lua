@@ -32,12 +32,16 @@
 --     two joins the lock is lifted and put straight back, silently.
 --   * Queued players are shielded from Shine's AFK kick while they wait (the !ready deadline
 --     catches anyone who walked away).
+--   * Off on Thunderdome by default (author, 2026-11-21): EnabledOnThunderdome (false) turns it on
+--     there; an admin's sud_joinpool on turns it on for the round.
 --   * Commands: !joinq, !exitq, !listq, !ready; sud_joinpool on|off for admins (this round only).
 --   * The scoreboard shows "SUD Queue" in the status column of queued players (client part).
 
 local kConfigFile = "SSM_JoinPool.json"
 local kDefaultConfig = {
     Enabled = true,
+    -- Off on Thunderdome unless this is true (an admin's sud_joinpool on still works there).
+    EnabledOnThunderdome = false,
     MaxDifference = 75,
     ReadySeconds = 30,
     -- No pair is offered before this many seconds into the round, so the first two to type !joinq
@@ -86,6 +90,7 @@ end
 local Pool = {}           -- { steamId, since } in the order they asked
 local Proposal = nil      -- the pair asked to type !ready
 local offThisRound = false
+local onThisRound = false    -- an admin's sud_joinpool on: lifts the Thunderdome default this round
 local lastEvaluate, lastBroadcast, lastShield = -math.huge, -math.huge, -math.huge
 local poolChanged = true
 local roundStartedAt = nil   -- Shared.GetTime() when the current round went live
@@ -289,10 +294,25 @@ local function Candidates()
     return list
 end
 
+local function GetIsThunderdome()
+    return Shared.GetThunderdomeEnabled ~= nil and Shared.GetThunderdomeEnabled() == true
+end
+
+-- nil when the pool is on; "off" (config or an admin, this round) or "thunderdome" otherwise.
+local function OffReason()
+    if not Config.Enabled or offThisRound then
+        return "off"
+    end
+    if GetIsThunderdome() and Config.EnabledOnThunderdome ~= true and not onThisRound then
+        return "thunderdome"
+    end
+    return nil
+end
+
 -- The teams as they stand, if the pool may run now: live round, switched on, both teams the same
 -- allowed size, nobody held or a bot. Returns marines, aliens or nil.
 local function CurrentTeams()
-    if not Config.Enabled or offThisRound or not IsLive() or LockState() ~= "locked" then
+    if OffReason() or not IsLive() or LockState() ~= "locked" then
         return nil
     end
     local gamerules = GetGamerules()
@@ -663,6 +683,7 @@ local oldResetGame
 oldResetGame = Class_ReplaceMethod("NS2Gamerules", "ResetGame", function(self, ...)
     oldResetGame(self, ...)
     offThisRound = false
+    onThisRound = false
     ClearPool(nil)
 end)
 
@@ -674,8 +695,11 @@ SSM.AddChatCommand("joinq", function(client)
     if not (steamId and player) then
         return
     end
-    if not Config.Enabled or offThisRound then
+    local offReason = OffReason()
+    if offReason == "off" then
         Say(client, "joinpool_off")
+    elseif offReason == "thunderdome" then
+        Say(client, "joinpool_thunderdome")
     elseif not IsLive() then
         Say(client, "joinpool_not_live")
     elseif not IsBench(player:GetTeamNumber()) then
@@ -786,6 +810,7 @@ Event.Hook("Console_sud_joinpool", function(caller, word)
         SayToEveryone(nil, "joinpool_admin_off", function() end)
     elseif word == "on" then
         offThisRound = false
+        onThisRound = true
         SayToEveryone(nil, "joinpool_admin_on", function() end)
     else
         Reply("joinpool_usage")
