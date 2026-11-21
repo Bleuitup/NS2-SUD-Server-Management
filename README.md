@@ -2,7 +2,8 @@
 
 Server administration quality of life for the NS2 Sudamerica server. No gameplay changes.
 Mostly server side: since v1.2 the pause also runs a small part on players' machines, so the game
-clock can stand still for everyone. It does nothing unless the server pauses.
+clock can stand still for everyone. It does nothing unless the server pauses. Disconnected players
+have one small client part too, which sets up the use prompt for a player who takes over a body.
 
 ## Commands and language
 

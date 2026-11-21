@@ -102,7 +102,13 @@ local function NewEntity(team, className)
                      score = 0, kills = 0, skill = 0, pres = 0 }
     player.GetTeamNumber = function(p) return p.team end
     player.GetName = function(p) return p.name end
-    player.SetName = function(p, name) p.name = name end
+    -- Like the game: names are made unique against every other player.
+    player.SetName = function(p, name)
+        for _, other in ipairs(Players) do
+            if other ~= p and other.name == name then name = name .. " (2)" break end
+        end
+        p.name = name
+    end
     player.GetClassName = function(p) return p.className end
     player.isa = function(p, name) return name == "Commander" and p.commander == true end
     player.SetControllerClient = function(p, client) p.client = client; client.player = p end
@@ -317,7 +323,7 @@ Sent = {}
 check(Swap(ana, "leo", "bleu") == "Done.", "an admin swaps Bleu back in")
 check(bleu.player == bleuBody and bleuBody.name == "Bleu", "Bleu plays his body again")
 check(bleuBody.score == 10 and bleuBody.kills == 3 and bleuBody.skill == 2000, "Bleu's own stats are back")
-check(leo.player.team == kSpectatorIndex and leo.spectator and leo.player.score == 1 and leo.player.skill == 1500,
+check(leo.player.team == kSpectatorIndex and leo.spectator and leo.player.name == "Leo" and leo.player.score == 1 and leo.player.skill == 1500,
     "Leo is a spectator again with his own stats")
 check(not bleu.spectator, "Bleu's spectator slot is released")
 check(SaidToAll("Leo and Bleu swapped places."), "swap line")

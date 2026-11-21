@@ -18,9 +18,9 @@ NS2 Launch Pad layout, matching the author's other mods:
 ```
 mod.settings                       Workshop metadata and description (never put a backslash in it)
 preview.jpg                        Workshop preview, 512x512 (author's GPT artwork; Launch Pad scales it to 512)
-source/lua/entry/SSM.entry         entry: Shared, Server and Client (Shared/Client only for the pause, since v1.2)
+source/lua/entry/SSM.entry         entry: Shared, Server and Client (since v1.2: the pause, and Saved Players' client fix)
 source/lua/SSM/Shared.lua          loads Pause/Shared.lua (server, client and predict)
-source/lua/SSM/Client.lua          loads Pause/Client.lua
+source/lua/SSM/Client.lua          loads Pause/Client.lua and SavedPlayers/Client.lua
 source/lua/SSM/Server.lua          loads the shared files, then each feature's server file
 source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta), console print, languages
 source/lua/SSM/Strings.lua         every private text in English, Spanish and Portuguese
@@ -253,9 +253,10 @@ every QoL feature out of B2TP. The handover notes and the B2TP code as it was ar
 - `SSMPause_ReplaceMethod` (Shared) replaces in a class and its derived classes and skips names
   missing in the build; Saved Players uses it too.
 
-## Feature: Saved Players (`SavedPlayers/Server.lua`; v1.2)
+## Feature: Saved Players (`SavedPlayers/Server.lua`, `SavedPlayers/Client.lua`; v1.2)
 
-NSL's statesave (`lua/NSL/statesave/server.lua`), same history as the pause. Server-only.
+NSL's statesave (`lua/NSL/statesave/server.lua`), same history as the pause. Server side, plus
+one client fix (below).
 
 ### Rules (author's picks, 2026-11-20)
 
@@ -293,6 +294,15 @@ NSL's statesave (`lua/NSL/statesave/server.lua`), same history as the pause. Ser
   `Player.GetDestructionAllowed` (a held body is not removed).
 - Two connected players swap by exchanging controllers, then fixing each client's spectator flag
   (`client:SetIsSpectator`, not `Player:SetIsSpectator`, which would JoinTeam), names and stats.
+- **Names are assigned directly** (`.name`), not with `Player:SetName`, when a person moves into a
+  body or two people swap: `SetName` makes names unique, and the other entity still holding the
+  name turned the first one into "Name (2)" (GitHub issue #1, LZZ, found on the 8v8 test).
+- **Client fix (`SavedPlayers/Client.lua`):** the use prompt (`actionIconGUI` plus
+  `lastAlien/MarineActionFindTime`) is only set up by `AlienActionFinderMixin`,
+  `MarineActionFinderMixin` and `ReadyRoomPlayer` when the entity is created as the local player,
+  so a client handed an existing entity hit a nil every move (issue #1). A `LocalPlayerChanged`
+  hook (the event the game runs `OnInitLocalClient` from) creates it for the new player, only when
+  controlling (not first-person spectating), and destroys the one left on the previous player.
 - Untested in game: placeholders and the 21-person connection cap (a full server might keep the
   original from reconnecting), Thunderdome auto-concede, NS2+ stats, commander bodies.
 

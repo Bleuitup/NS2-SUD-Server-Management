@@ -256,7 +256,9 @@ local function PutIntoBody(client, ownerId, joined)
     Server.DisconnectClient(held.client)
 
     body:SetPlayerInfo(playerInfo)
-    body:SetName(name)
+    -- Set directly: Player:SetName makes names unique, and the throwaway player may still carry
+    -- this name, which would turn it into "Name (2)" (GitHub issue #1). It is already a valid name.
+    body.name = name
     body.sendTechTreeBase = true
     body:AddTimedCallback(RemoveCachedFlag, 0.1)
 
@@ -391,8 +393,9 @@ local function SwapPeople(client1, client2)
     client1:SetIsSpectator(player2:GetTeamNumber() == kSpectatorIndex)
     client2:SetIsSpectator(player1:GetTeamNumber() == kSpectatorIndex)
 
-    player2:SetName(name1)
-    player1:SetName(name2)
+    -- The two names are only exchanged, so set them directly: Player:SetName makes names unique,
+    -- and the first rename would clash with the other player still holding it (GitHub issue #1).
+    player1.name, player2.name = name2, name1
     Apply(player2, data1)
     Apply(player1, data2)
     player1.sendTechTreeBase = true
