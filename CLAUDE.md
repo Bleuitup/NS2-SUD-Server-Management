@@ -403,6 +403,16 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ## Open threads (remind the author)
 
+- **v1.3b published and tagged 2026-11-21** (`0991f31`, merged into `main`; Workshop updated
+  21:24 UTC with the new description lines): on Thunderdome, Spectator On Connect moves nobody,
+  Commander Match and Join Pool are off by default; Join Pool's `!ready` passes through unless the
+  player has a pair waiting. Still to check in a real 6v6 Thunderdome match: matchmade players are
+  placed on teams, and Shine tournamentmode's ready-up holds the round (enabled on the 6v6 by the
+  Server Administration session after the NSL Mod was removed).
+- **6v6 launcher patch:** `tdautomat.sh` forces the local `ShouldMove` in Spectator On Connect to
+  false by name (an `sh_luarun` workaround from before 1.3b). Keep that local's name until the
+  Server Administration session removes the patch (after a real match on 1.3b, with the author's
+  OK).
 - **v1.3a published and tagged 2026-11-21** (`aa0a124`, merged into `main`): the round-start wait,
   `OfferDelaySeconds` 30. Launch Pad's publish only rewrote `mod.settings` line endings (CRLF), no
   content change.
