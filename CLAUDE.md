@@ -391,9 +391,9 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ## Open threads (remind the author)
 
-- **v1.3a prepared 2026-11-21 on `fix/join-pool-round-start`** (round-start wait,
-  `OfferDelaySeconds` 30): committed, not merged, not published, not tagged. Merge and tag `v1.3a`
-  once the author says the Workshop publish is live.
+- **v1.3a published and tagged 2026-11-21** (`aa0a124`, merged into `main`): the round-start wait,
+  `OfferDelaySeconds` 30. Launch Pad's publish only rewrote `mod.settings` line endings (CRLF), no
+  content change.
 - **v1.3 (Join Pool) published and tagged 2026-11-21** (`19b0be7`, merged into `main`). The
   description says it is still being tested. The author retests it on the live 8v8. Still to check
   in game: the scoreboard label, the flash, the joiners' respawn, Lockteams' join-spam counter,
