@@ -761,9 +761,10 @@ SSM.ListCommand("!listq", "cmd_listq")
 
 SSM.AddChatCommand("ready", function(client)
     local steamId = SteamIdOf(client)
+    -- Only a player with a pair waiting is answered; for anyone else !ready is left alone, so it
+    -- still reaches Shine's tournament mode ready-up (author, 2026-11-21) and shows in chat.
     if not (steamId and Proposal and (Proposal.marine == steamId or Proposal.alien == steamId)) then
-        Say(client, "joinpool_ready_none")
-        return
+        return false
     end
     Proposal.ready[steamId] = true
     if Proposal.ready[Proposal.marine] and Proposal.ready[Proposal.alien] then

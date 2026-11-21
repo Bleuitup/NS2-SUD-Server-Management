@@ -229,9 +229,6 @@ en.joinpool_list_empty = "Nobody is in the join pool."
 es.joinpool_list_empty = "No hay nadie en la cola para entrar."
 pt.joinpool_list_empty = "Não há ninguém na fila para entrar."
 
-en.joinpool_ready_none = "Nobody has asked you to type !ready."
-es.joinpool_ready_none = "No hay ningún pedido de !ready pendiente."
-pt.joinpool_ready_none = "Ninguém pediu para você digitar !ready."
 
 en.joinpool_ready_wait = "Ready. Waiting for %s."
 es.joinpool_ready_wait = "Listo. Esperando a %s."

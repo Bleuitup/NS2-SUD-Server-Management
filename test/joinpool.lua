@@ -402,7 +402,8 @@ p1 = NewPlayer("Ana", kSpectatorIndex, 1000)
 Say(p1, "!listq"); check(Has(p1, "Nobody is in the join pool"), "listq empty")
 Say(p1, "!joinq"); Say(p1, "!listq"); check(Has(p1, "Join pool (1): Ana"), "listq names")
 Say(p1, "!joinq"); check(Has(p1, "already in the join pool"), "joinq twice")
-Say(p1, "!ready"); check(Has(p1, "Nobody has asked you"), "ready with nothing pending")
+local repliesBefore = #TextsTo(p1)
+check(Say(p1, "!ready") == nil and #TextsTo(p1) == repliesBefore, "ready with nothing pending: left alone, no reply")
 Say(p1, "!exitq"); check(Has(p1, "You left the join pool") and #SSM.JoinPool_GetPool() == 0, "exitq")
 Say(p1, "!exitq"); check(Has(p1, "not in the join pool"), "exitq when not in")
 
@@ -486,6 +487,13 @@ Reset(); m, a = Teams(6)
 p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 Say(p1, "!lang es"); Say(p1, "!joinq")
 check(Has(p1, "Está en la cola para entrar"), "Spanish reply")
+
+-- !ready without a pair waiting is left alone (shown in chat, reaches Shine's tournament mode).
+Reset(); m, a = Teams(6)
+p1 = NewPlayer("P1", kSpectatorIndex, 1000)
+local before = #TextsTo(p1)
+check(Say(p1, "!ready") == nil and #TextsTo(p1) == before, "!ready with no pair: not swallowed, no reply")
+check(Say(m[1], "!ready") == nil, "a commander's pregame-style !ready passes through")
 
 -- Thunderdome: off by default, on with EnabledOnThunderdome or an admin's sud_joinpool on.
 Reset(); m, a = Teams(6)

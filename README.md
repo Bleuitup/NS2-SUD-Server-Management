@@ -228,6 +228,8 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
   once, and a pair waiting on `!ready` is cancelled) until the teams are locked again.
 - **Not before 30 seconds into the round.** `!joinq` works from the start, but the first pair is only picked 30 seconds in, from everyone who asked by then, so it is not a race to type `!joinq` first. Players who join the pool earlier are told how long is left.
 - Whoever does not type `!ready` in time leaves the pool; whoever did stays and can be paired again.
+- `!ready` from anyone without a pair waiting is left alone, so it still works for Shine's
+  tournament mode ready-up.
 - Uneven teams (usually someone who crashed, whose body Disconnected players keeps) and 8v8 are
   left alone, and so is a team holding a disconnected body.
 - The pool empties when the round ends. Players in it are not kicked by Shine's AFK kick while they

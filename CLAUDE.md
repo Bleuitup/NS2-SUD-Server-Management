@@ -129,7 +129,8 @@ ScoreBoard.
 - **One chat router for every feature.** `Shine.Hook.Add("PlayerSay", "SSM_Chat", ...)` - not a
   Shine plugin, not Shine commands, so no admin-log line - matches `!word` or `/word` (any case,
   arguments after a space), runs the handler and returns `""` so nobody else sees the typed
-  command. Unknown words are left alone. The hook is added on the first `UpdateServer`, because
+  command. Unknown words are left alone, and so is any message whose handler returns `false`
+  (shown in chat, passed on to other hooks). The hook is added on the first `UpdateServer`, because
   load order between mods is not guaranteed - the same opportunistic pattern Hive Spawn Selector
   uses for CustomSpawns.
 - **`!help`** (author's request, 2026-11-16; first built as `!commands`, renamed because "!help" is shorter and everyone knows the word): one private chat
@@ -321,6 +322,10 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ### Rules (author's picks, 2026-11-21)
 
+- **`!ready` is only claimed from a player with a pair waiting** (author, 2026-11-21, v1.3b); for
+  anyone else it is left alone, so it reaches Shine's tournament mode ready-up, which is on for
+  Thunderdome on the 6v6 since 2026-11-21 (Shine's command hook runs first anyway, at max
+  priority, and returns nothing for `!`).
 - **Off on Thunderdome by default** (author, 2026-11-21, v1.3b): `EnabledOnThunderdome` (false);
   an admin's `sud_joinpool on` lifts it for the round (`onThisRound`). `!joinq` there answers
   `joinpool_thunderdome`.
