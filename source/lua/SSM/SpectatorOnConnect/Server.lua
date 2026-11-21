@@ -8,7 +8,8 @@
 -- slot is free (vanilla Gamerules:GetCanJoinPlayingTeam), the same as for any spectator today.
 --
 -- Rules (the author's picks, 2026-11-16):
---   * Always, pregame included.
+--   * Always, pregame included, except on Thunderdome (author, 2026-11-21): Thunderdome games
+--     are set up by their lobby, so everyone lands in the ready room as usual there.
 --   * Not on map changes: every client reconnects then, and the players who were already on the
 --     server land in the ready room as usual. Who was connected is saved every few seconds and
 --     read back after the map loads, the same way the round counter survives map changes.
@@ -100,7 +101,15 @@ local function SendNotices(now)
 end
 
 -- Whether a newly connected client should be moved to the spectators.
+local function GetIsThunderdome()
+    return Shared.GetThunderdomeEnabled ~= nil and Shared.GetThunderdomeEnabled() == true
+end
+
 local function ShouldMove(client, player)
+    if GetIsThunderdome() then
+        return false
+    end
+
     local steamId = SteamIdOf(client)
     if not steamId or client:GetIsSpectator() then
         return false

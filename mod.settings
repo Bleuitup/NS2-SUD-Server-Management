@@ -29,7 +29,7 @@ Current features: consecutive rounds played and minutes played, to simplify spec
 
 [h1]Spectator on connect[/h1]
 [list]
-[*]Everyone who joins the server starts as a spectator, so nobody takes up a player slot just by waiting in the ready room
+[*]Everyone who joins the server starts as a spectator, so nobody takes up a player slot just by waiting in the ready room. Thunderdome games are the exception
 [*]Join a team from spectator whenever a player slot is free
 [*]After a map change, players who were already on the server start in the ready room as usual
 [/list]

@@ -159,6 +159,8 @@ released in v1.1 (2026-11-19).
   `Gamerules:GetCanJoinPlayingTeam`).
 - **Always**, pregame included (author's pick). Bots and clients the game already put in a
   spectator slot are left alone.
+- **Not on Thunderdome** (author, 2026-11-21, v1.3b): `Shared.GetThunderdomeEnabled()` is checked at
+  each connect, and on Thunderdome nobody is moved or told anything.
 - **Map changes are exempt** (author's pick): every client reconnects then. Who is connected is
   saved every 5 s to `config://SSM_SpectatorOnConnectState.json` (anyone seen in the last 30 s, so
   clients dropped in the last frames of a map are not lost). If that save is under 2 minutes old
@@ -476,6 +478,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: no Spectator On Connect on Thunderdome). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

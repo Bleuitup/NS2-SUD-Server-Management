@@ -87,7 +87,8 @@ idling in the ready room takes a player slot; starting everyone as a spectator k
 by a dropped player free until a spectator joins a team, which the game only allows while a
 player slot is open.
 
-- Always on, pregame included.
+- Always on, pregame included, except on Thunderdome: there everyone lands in the ready room as
+  usual.
 - Map changes are the exception: players who were on the server when the map ended land in the
   ready room as usual. Who was connected is kept in `SSM_SpectatorOnConnectState.json`.
 - Bots, and anyone the game already put in a spectator slot, are left alone.

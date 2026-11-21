@@ -222,5 +222,16 @@ LoadServer()
 Connect(NewClient(101))
 check(TeamOf(101) == kSpectatorIndex, "an old save does not exempt anyone")
 
+-- Thunderdome: nobody is moved, and nobody gets the line. (First let the last line above go out.)
+Run(6)
+Shared.GetThunderdomeEnabled = function() return true end
+Joins, Notified = {}, {}
+local t = NewClient(301)
+check(Connect(t).team == kTeamReadyRoom and #Joins == 0, "on Thunderdome a newcomer lands in the ready room")
+Run(6)
+check(#Notified == 0, "and gets no spectator line")
+Shared.GetThunderdomeEnabled = function() return false end
+check(Connect(NewClient(302)).team == kSpectatorIndex, "off Thunderdome again: moved as usual")
+
 print(string.format("%d passed, %d failed", passes, failures))
 os.exit(failures == 0 and 0 or 1)
