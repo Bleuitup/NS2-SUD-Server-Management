@@ -339,6 +339,11 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
   !ready." (author's wording, tidied). The pair get a private line each. **Every line goes to each
   player in their own language**, the public ones too (sent one by one, so `!lang` applies),
   unlike the other features, where messages to everyone stay English.
+- **No pair before 30 s into the round** (`OfferDelaySeconds`; author, 2026-11-21, v1.3a): `!joinq`
+  works from the start, but nobody is offered until then, so the best pair of everyone who asked is
+  picked, not the first two to type it ("otherwise it becomes a race"). Players who join the pool
+  during the wait get `joinpool_wait_start` with the seconds left. The wait starts when the server
+  first sees the round live, and again every round.
 - **`!ready` within 30 s** (`ReadySeconds`). Whoever does not type it leaves the pool; whoever
   did stays and can be paired again at once. When both are ready the pair is re-checked against
   the teams as they are (still even, allowed size, slots, limit); otherwise cancelled, both stay.
@@ -386,6 +391,9 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ## Open threads (remind the author)
 
+- **v1.3a prepared 2026-11-21 on `fix/join-pool-round-start`** (round-start wait,
+  `OfferDelaySeconds` 30): committed, not merged, not published, not tagged. Merge and tag `v1.3a`
+  once the author says the Workshop publish is live.
 - **v1.3 (Join Pool) published and tagged 2026-11-21** (`19b0be7`, merged into `main`). The
   description says it is still being tested. The author retests it on the live 8v8. Still to check
   in game: the scoreboard label, the flash, the joiners' respawn, Lockteams' join-spam counter,
@@ -443,7 +451,7 @@ Parked or dropped (2026-11-16):
   a map change, not after a restart, Thunderdome, the off switch), the round-start line, pause and
   resume with their chat lines, the per-team limit and round reset, pause on disconnect, and the
   game-chat fallback without Shine. Not the frozen world itself.
-- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, Spanish. 76 checks.
+- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, the round-start wait, Spanish. 86 checks.
 - `lua test/savedplayers.lua`: who is kept, the held slot, Lockteams, taking over by joining
   (gear stays, name and stats follow the person), reconnecting straight back in with Spectator On
   Connect leaving them alone, `sud_swap` (access, commander rule, names, swap back with stats),
@@ -468,6 +476,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

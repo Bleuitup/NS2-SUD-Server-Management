@@ -20,6 +20,9 @@
 --     Queue order only breaks ties.
 --   * Everyone else gets one line naming the pair and the gap before and after; each of the two
 --     gets a private line, and their game window flashes on the taskbar (client part).
+--   * No pair before 30 s into the round (OfferDelaySeconds; author, 2026-11-21): !joinq works from
+--     the start, but the best pair of everyone who asked is picked then, so it is not a race to
+--     type !joinq first.
 --   * 30 s to type !ready (ReadySeconds). Whoever does not leaves the pool; whoever did stays.
 --     When both are ready, the pair is checked again against the teams as they are then.
 --   * Lockteams is required (author, 2026-11-21): the pool only runs while Lockteams v2 is loaded
@@ -37,6 +40,9 @@ local kDefaultConfig = {
     Enabled = true,
     MaxDifference = 75,
     ReadySeconds = 30,
+    -- No pair is offered before this many seconds into the round, so the first two to type !joinq
+    -- do not get in just for being first; the best pair of everyone who asked is picked then.
+    OfferDelaySeconds = 30,
     TeamSizes = { 6, 7 }
 }
 -- How often the pool is looked at, and how often the queued list is re-sent to every client
@@ -82,6 +88,16 @@ local Proposal = nil      -- the pair asked to type !ready
 local offThisRound = false
 local lastEvaluate, lastBroadcast, lastShield = -math.huge, -math.huge, -math.huge
 local poolChanged = true
+local roundStartedAt = nil   -- Shared.GetTime() when the current round went live
+
+-- Still inside the round-start wait (OfferDelaySeconds): seconds left, or nil.
+local function OfferWaitLeft()
+    if not roundStartedAt then
+        return nil
+    end
+    local left = (Config.OfferDelaySeconds or 0) - (Shared.GetTime() - roundStartedAt)
+    return left > 0 and left or nil
+end
 
 local function SteamIdOf(client)
     if client and not client:GetIsVirtual() then
@@ -594,7 +610,7 @@ local function Evaluate()
         return
     end
 
-    if #Pool < 2 then
+    if #Pool < 2 or OfferWaitLeft() then
         return
     end
     local marines, aliens = CurrentTeams()
@@ -610,6 +626,12 @@ end
 Event.Hook("UpdateServer", function()
     local ok, err = pcall(function()
         local now = Shared.GetTime()
+
+        if IsLive() then
+            roundStartedAt = roundStartedAt or now
+        else
+            roundStartedAt = nil
+        end
 
         if (#Pool > 0 or Proposal) and not IsLive() then
             ClearPool("joinpool_round_over")
@@ -668,6 +690,10 @@ SSM.AddChatCommand("joinq", function(client)
         Pool[#Pool + 1] = { steamId = steamId, since = Shared.GetTime() }
         poolChanged = true
         Say(client, "joinpool_added", #Pool, Config.MaxDifference)
+        local left = OfferWaitLeft()
+        if left then
+            Say(client, "joinpool_wait_start", Config.OfferDelaySeconds, math.ceil(left))
+        end
     end
 end)
 SSM.ListCommand("!joinq", "cmd_joinq")

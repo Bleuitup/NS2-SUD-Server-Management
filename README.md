@@ -223,6 +223,7 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
   the pairing, so `!joinq` is refused unless [Shine] Lockteams V2 is running and the teams are
   locked. If an admin unlocks the teams mid-round, the pool keeps everyone but pauses (they are told
   once, and a pair waiting on `!ready` is cancelled) until the teams are locked again.
+- **Not before 30 seconds into the round.** `!joinq` works from the start, but the first pair is only picked 30 seconds in, from everyone who asked by then, so it is not a race to type `!joinq` first. Players who join the pool earlier are told how long is left.
 - Whoever does not type `!ready` in time leaves the pool; whoever did stays and can be paired again.
 - Uneven teams (usually someone who crashed, whose body Disconnected players keeps) and 8v8 are
   left alone, and so is a team holding a disconnected body.
@@ -241,4 +242,5 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 | `Enabled` | `true` | `false`: the join pool is off |
 | `MaxDifference` | `75` | largest team-average difference a pair may leave |
 | `ReadySeconds` | `30` | time the pair has to type `!ready` |
+| `OfferDelaySeconds` | `30` | no pair is offered before this many seconds into the round, so the best pair of everyone who asked is picked, not the first two |
 | `TeamSizes` | `[6, 7]` | team sizes (per team, both equal) the pool runs at |

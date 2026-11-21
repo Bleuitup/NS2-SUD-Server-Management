@@ -151,8 +151,13 @@ local function Run(seconds)
     until Now >= stop
 end
 
-local function Reset()
+-- Most tests switch the round-start wait off (OfferDelaySeconds 0) so pairs are offered at once;
+-- Reset(true) keeps the defaults, wait included.
+local function Reset(defaults)
     Files, Now, Hooks, Notified, Net, Joins, Players, LockDuringJoin, AFKResets, Admins = {}, 0, {}, {}, {}, {}, {}, {}, {}, {}
+    if not defaults then
+        Files["SSM_JoinPool.json"] = { OfferDelaySeconds = 0 }
+    end
     nextId, MaxPlayers, Reserved, Started = 0, 16, 0, true
     LockTeams.TeamLock = true
     Gamerules.failJoinTeam = nil
@@ -449,6 +454,32 @@ ShineUsers = { [trusted.client] = { Group = "TrustedPlayer" } }
 Hooks.Console_sud_joinpool(trusted.client, "off")
 check(Has(trusted, "switched the join pool off"), "Shine admin without explicit access switches it")
 ShineUsers = {}
+
+-- Round-start wait (default 30 s): !joinq works at once, no pair before 30 s, then the best pair.
+Reset(true)
+check(Files["SSM_JoinPool.json"].OfferDelaySeconds == 30, "config OfferDelaySeconds 30")
+m, a = Teams(6)
+p1 = NewPlayer("Early1", kSpectatorIndex, 1500); p2 = NewPlayer("Early2", kSpectatorIndex, 1060)
+Say(p1, "!joinq"); Say(p2, "!joinq")
+check(#SSM.JoinPool_GetPool() == 2, "round start: !joinq accepted")
+check(Has(p1, "Pairs are picked from 30 seconds") and Has(p1, "(30 s left)"), "round start: told about the wait")
+Run(10)
+check(SSM.JoinPool_GetProposal() == nil, "round start: no pair at 10 s")
+p3 = NewPlayer("Later", kSpectatorIndex, 1000)
+Say(p3, "!joinq")
+check(Has(p3, "(20 s left)"), "wait line counts down")
+Run(19)
+check(SSM.JoinPool_GetProposal() == nil, "round start: no pair at 29 s")
+Run(2)
+prop = SSM.JoinPool_GetProposal()
+check(prop and ((prop.marineName == "Early2" and prop.alienName == "Later") or (prop.marineName == "Later" and prop.alienName == "Early2")), "after 30 s: best pair of everyone, not the first two")
+local p4 = NewPlayer("AfterWait", kSpectatorIndex, 1000)
+Say(p4, "!joinq")
+check(not Has(p4, "Pairs are picked from"), "after the wait: no wait line")
+-- A new round starts the wait again.
+Started = false; Run(1); Started = true
+Say(p1, "!joinq"); Say(p2, "!joinq"); Run(5)
+check(SSM.JoinPool_GetProposal() == nil and Has(p1, "Pairs are picked from"), "new round: wait again")
 
 -- Spanish texts.
 Reset(); m, a = Teams(6)

@@ -205,7 +205,11 @@ en.joinpool_added = "You are in the join pool (%d waiting). When you and another
 es.joinpool_added = "Está en la cola para entrar (%d esperando). Cuando haya otro jugador con quien entrar manteniendo los equipos a menos de %d de elo, se pedirá escribir !ready."
 pt.joinpool_added = "Você está na fila para entrar (%d esperando). Quando você e outro jogador puderem entrar mantendo os times a menos de %d de elo, vamos pedir para digitar !ready."
 
-en.joinpool_left = "You left the join pool."
+en.joinpool_wait_start = "Pairs are picked from %d seconds into the round, so everyone has time to join the pool (%d s left)."
+es.joinpool_wait_start = "Los pares se eligen a partir de los %d segundos de partida, para que todos tengan tiempo de entrar a la cola (faltan %d s)."
+pt.joinpool_wait_start = "Os pares são escolhidos a partir dos %d segundos de partida, para que todos tenham tempo de entrar na fila (faltam %d s)."
+
+en.joinpool_left ="You left the join pool."
 es.joinpool_left = "Salió de la cola para entrar."
 pt.joinpool_left = "Você saiu da fila para entrar."
 
