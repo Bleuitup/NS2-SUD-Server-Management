@@ -420,6 +420,12 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ## Open threads (remind the author)
 
+- **v1.3c published and tagged 2026-11-22** (`cd2cd59`, merged into `main`; Workshop updated
+  5 min after the commit with the new description line; Launch Pad again only rewrote
+  `mod.settings` line endings): Join Pool's `!readyq`; Saved Players keeps only living players
+  and lets go of a held body that dies; held bodies have a `[D/C]` scoreboard entry. To see in
+  game: `!readyq` on the 8v8 with tournamentmode, the `[D/C]` row, a takeover leaving one row,
+  and a disconnect while dead (not kept, pres back on rejoin).
 - **v1.3b published and tagged 2026-11-21** (`0991f31`, merged into `main`; Workshop updated
   21:24 UTC with the new description lines): on Thunderdome, Spectator On Connect moves nobody,
   Commander Match and Join Pool are off by default; Join Pool's `!ready` passes through unless the
