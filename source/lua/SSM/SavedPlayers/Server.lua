@@ -26,6 +26,11 @@
 --   * A held body keeps its player slot: only a takeover of that body may use it, so the player
 --     cap holds. Lockteams still blocks joins that are not forced; sud_swap forces.
 --   * Saved players left at round reset are removed.
+--   * Only living players are kept, and a held body that dies is let go (v1.3c, author
+--     2026-11-22): a corpse never becomes a respawning player while held, so whoever took it over
+--     could not spawn. The original gets the resources back when they rejoin, as in the game.
+--   * A held body has its own scoreboard entry, "[D/C] Name" (v1.3c); a takeover swaps it for
+--     the person's.
 --
 -- Left out of the port: NSL's referee list command and its bot-controller and virtual-move hooks,
 -- which build 345 no longer needs (a placeholder has no bot attached, so vanilla gives it an empty
@@ -126,6 +131,16 @@ local function RemoveCachedFlag(self)
     return false
 end
 
+-- Gives a player a scoreboard entry and destroys the one it had, so each body has exactly one.
+local function ReplacePlayerInfo(player, playerInfo)
+    local old = player.playerInfo
+    player.playerInfo = nil
+    if old and old ~= playerInfo and IsValid(old) then
+        DestroyEntity(old)
+    end
+    player:SetPlayerInfo(playerInfo)
+end
+
 -- Disconnect: keep the body ---------------------------------------------------------------------
 
 local function StoreDisconnectedTeamPlayer(gamerules, client)
@@ -144,6 +159,18 @@ local function StoreDisconnectedTeamPlayer(gamerules, client)
 
     local id = client:GetUserId()
     local name = player:GetName()
+
+    -- Only a living player is kept (v1.3c, author 2026-11-22). A dead one is a corpse that never
+    -- turns into a respawning player while held: on the live 8v8 (2026-11-22) a player who died
+    -- and then timed out was kept, and whoever took the body over could not spawn. The game keeps
+    -- a dead player's resources for when they rejoin the team, and the pause still happens.
+    if player:isa("Spectator") or not player:GetIsAlive() then
+        Log(string.format("not kept %s (dead, %s)", name, kTeamNames[teamNumber]))
+        if SSMPause_TriggerDisconnectPause then
+            SSMPause_TriggerDisconnectPause(name, teamNumber)
+        end
+        return
+    end
 
     -- Stand-in for the disconnecting client, so the rest of the disconnect code removes this
     -- instead of the real player.
@@ -169,11 +196,14 @@ local function StoreDisconnectedTeamPlayer(gamerules, client)
     player:SetControllerClient(newclient)
     tempplayer:SetControllerClient(client)
 
-    -- Its scoreboard entry belongs to the disconnecting client and is destroyed with it.
-    player.playerInfo = nil
-
     player.isCached = true
     player:SetName(kDisconnectTag .. name)
+
+    -- The body gets a scoreboard entry of its own, so it shows as "[D/C] Name" on its team
+    -- (v1.3c). The disconnecting client's entry goes: the game only removes an entry with the
+    -- player it points at, and this body stays.
+    ReplacePlayerInfo(player, CreateEntity(PlayerInfoEntity.kMapName))
+
     Held[id] = { client = newclient, name = name, team = teamNumber, at = Shared.GetTime(true) }
 
     Log(string.format("kept %s (%s, %s)", name, player:GetClassName(), kTeamNames[teamNumber]))
@@ -210,6 +240,60 @@ oldOnClientDisconnect = Class_ReplaceMethod("NS2Gamerules", "OnClientDisconnect"
     return oldOnClientDisconnect(self, client, ...)
 end)
 
+-- A held body that died is let go (v1.3c): a corpse is no place to take. Its slot opens as for
+-- any dead player, and the original gets the body's resources back when they rejoin that team,
+-- the way the game keeps them for anyone who leaves.
+local function ReleaseHeld(ownerId)
+    local held = Held[ownerId]
+    if not held then
+        return
+    end
+    Held[ownerId] = nil
+
+    local body = held.client:GetControllingPlayer()
+    local gamerules = GetGamerules()
+    if body and gamerules and gamerules.clientpres then
+        gamerules.clientpres[ownerId] = gamerules.clientpres[ownerId] or {}
+        gamerules.clientpres[ownerId][held.team] = body:GetResources()
+    end
+    if body then
+        -- No longer kept from its ragdoll and the destruction checks.
+        body.isCached = false
+    end
+
+    Server.DisconnectClient(held.client)
+    Log(string.format("let go of %s's body (died, %s)", held.name, kTeamNames[held.team]))
+end
+
+local function IsDead(player)
+    return player:isa("Spectator") or not player:GetIsAlive()
+end
+
+local kDeadCheckSeconds = 0.5
+local lastDeadCheck = -math.huge
+
+Event.Hook("UpdateServer", function()
+    local now = Shared.GetTime()
+    if now - lastDeadCheck < kDeadCheckSeconds or next(Held) == nil then
+        return
+    end
+    lastDeadCheck = now
+
+    local dead = {}
+    for ownerId, held in pairs(Held) do
+        local body = held.client:GetControllingPlayer()
+        if body and IsDead(body) then
+            dead[#dead + 1] = ownerId
+        end
+    end
+    for i = 1, #dead do
+        local ok, err = pcall(ReleaseHeld, dead[i])
+        if not ok then
+            Log("error letting go of a body: " .. tostring(err))
+        end
+    end
+end)
+
 -- Into a held body -----------------------------------------------------------------------------
 
 -- Puts a connected player into the body held under ownerId. joined: the player already joined
@@ -222,6 +306,11 @@ local function PutIntoBody(client, ownerId, joined)
     local body = held and held.client:GetControllingPlayer()
     local player = joined or client:GetControllingPlayer()
     if not (held and gamerules and body and player) then
+        return false
+    end
+    -- Died since the last check: let go of it, and the player just joins as they asked.
+    if IsDead(body) then
+        ReleaseHeld(ownerId)
         return false
     end
 
@@ -255,7 +344,8 @@ local function PutIntoBody(client, ownerId, joined)
     Held[ownerId] = nil
     Server.DisconnectClient(held.client)
 
-    body:SetPlayerInfo(playerInfo)
+    -- The person's entry replaces the body's "[D/C]" one.
+    ReplacePlayerInfo(body, playerInfo)
     -- Set directly: Player:SetName makes names unique, and the throwaway player may still carry
     -- this name, which would turn it into "Name (2)" (GitHub issue #1). It is already a valid name.
     body.name = name

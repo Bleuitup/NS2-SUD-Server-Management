@@ -177,7 +177,11 @@ On every server, ported from Dragon's NSL Mod.
 
 - When a player on a team disconnects during a round, their player stays where it was as
   `[D/C] Name`, with its lifeform, upgrades, weapons, jetpack or Exo, health, personal resources
-  and the command chair. It can be killed.
+  and the command chair. It shows on the scoreboard as `[D/C] Name`. It can be killed.
+- **Only a living player is kept, and a body that dies is let go** (v1.3c). The slot opens as
+  for any dead player, and the original gets their resources back when they rejoin that team, as
+  the game does for anyone who leaves. The disconnect pause still happens. (v1.3b kept a player
+  who had just died; whoever took that body over could not spawn.)
 - **They reconnect while it is still there:** they go straight back into it. Spectator on
   connect leaves them alone.
 - **Someone joins that team:** they take the body over, with everything in it. Then the original

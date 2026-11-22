@@ -269,6 +269,22 @@ one client fix (below).
 - **On every server**, Thunderdome, passworded or not.
 - A team player disconnecting mid-round leaves their player as `[D/C] Name`, held by a virtual
   placeholder client: gear, lifeform, pres, health, chair. Killable. Removed at round reset.
+- **Only living players are kept; a held body that dies is let go** (author, 2026-11-22, v1.3c).
+  Live 8v8, 2026-11-22: godi died at 01:40:07, timed out, was kept at 01:40:15 as a dead Skulk;
+  LZZ took it at 01:41:37 (log still said `Skulk`, so it never turned into an AlienSpectator under
+  the placeholder) and could not spawn until F4 and rejoining. Exact engine step not verified.
+  Now: `StoreDisconnectedTeamPlayer` skips `isa("Spectator")` or `not GetIsAlive()` (still asks
+  for the disconnect pause); an `UpdateServer` check every 0.5 s and `PutIntoBody` let go of a
+  dead held body (`ReleaseHeld`: writes the body's pres into `gamerules.clientpres[id][team]`,
+  which vanilla `JoinTeam` gives back, clears `isCached`, disconnects the placeholder). A takeover
+  that finds the body dead becomes a normal join.
+- **Scoreboard entry** (v1.3c): vanilla `Gamerules:OnClientDisconnect` compares
+  `playerInfo.clientIndex`, a field `PlayerInfoEntity` never sets, so it never destroys anything;
+  an entry goes when its player is destroyed (`Player:OnDestroy`) or is gone (`UpdateScore`). So
+  the disconnecting client's entry outlived it, pointing at the held body, and after a takeover
+  the body had two. Now the keep destroys that entry and gives the body a fresh one
+  (`ReplacePlayerInfo`, shows `[D/C] Name` with a bot's steamId 0), and `PutIntoBody` destroys the
+  body's entry before giving it the person's. Why v1.3b showed no `[D/C]` row is not known.
 - **Original reconnects while held: straight back in.** Spectator On Connect's `ShouldMove` asks
   `SSM.SavedPlayers_IsHeld(steamId)` and leaves them alone.
 - **Anyone joining a team that holds a body takes it over** ("equivalent to sud_swap, to
@@ -478,7 +494,9 @@ Parked or dropped (2026-11-16):
 - `lua test/savedplayers.lua`: who is kept, the held slot, Lockteams, taking over by joining
   (gear stays, name and stats follow the person), reconnecting straight back in with Spectator On
   Connect leaving them alone, `sud_swap` (access, commander rule, names, swap back with stats),
-  round reset, the off switch. Not the engine hand-over itself.
+  round reset, the off switch, dead players not kept and a held body that dies let go with its
+  pres kept (v1.3c), one scoreboard entry per body and none left over. Not the engine hand-over
+  itself.
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 
@@ -499,6 +517,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

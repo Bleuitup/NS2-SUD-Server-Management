@@ -53,6 +53,7 @@ Current features: consecutive rounds played and minutes played, to simplify spec
 [h1]Disconnected players[/h1]
 [list]
 [*]If you disconnect during a round, your player stays where it was, marked [D/C], with your lifeform, weapons, upgrades and resources
+[*]Only if you were alive. If you were dead, or your player dies while you are away, you get your resources back when you rejoin your team
 [*]Reconnect before anyone takes your place and you go straight back in
 [*]Anyone who joins your team takes your place, with everything you had
 [*]Admins, and your team's commander, can swap you back in with [b]sud_swap[/b] in the console

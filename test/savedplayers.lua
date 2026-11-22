@@ -4,7 +4,8 @@
 -- Stubs a tiny server: clients, players that a client controls, teams, a 4-player cap, even
 -- teams, a Lockteams-style lock, placeholder (virtual) clients. Proves who is kept, taking a body
 -- over by joining, the slot rule, reconnecting straight back in (and Spectator On Connect leaving
--- them alone), sud_swap's access and results, stats following the person, and the round reset.
+-- them alone), sud_swap's access and results, stats following the person, the round reset, dead
+-- players not kept and held bodies let go when they die (v1.3c), and one scoreboard entry per body.
 -- It says nothing about the real engine hand-over, which only a server shows.
 
 local kSharedFiles = { "source/lua/SSM/Messages.lua", "source/lua/SSM/Strings.lua", "source/lua/SSM/Commands.lua" }
@@ -36,6 +37,7 @@ local Hooks = {}
 local Sent = {}       -- chat: { client or nil, text }
 local Printed = {}    -- console replies: { client, text }
 local Players = {}    -- every player entity
+local Infos = {}      -- every scoreboard entry: { player = the player it shows }
 local Admins = {}     -- [steamId] = true
 local Locked = false  -- Lockteams: unforced joins to a playing team are refused
 local MaxPlayers = 4
@@ -44,7 +46,9 @@ local nextClientId = 1
 kTeamReadyRoom, kTeam1Index, kTeam2Index, kSpectatorIndex = 0, 1, 2, 3
 kGameState = { NotStarted = 1, Started = 5 }
 Skulk = { kMapName = "skulk" }
+PlayerInfoEntity = { kMapName = "playerinfo" }
 function Vector() return {} end
+function IsValid(obj) return obj ~= nil and not obj.destroyed end
 
 function LoadConfigFile(name, default)
     if Files[name] then return deepcopy(Files[name]) end
@@ -110,19 +114,43 @@ local function NewEntity(team, className)
         p.name = name
     end
     player.GetClassName = function(p) return p.className end
-    player.isa = function(p, name) return name == "Commander" and p.commander == true end
+    player.isa = function(p, name)
+        return (name == "Commander" and p.commander == true) or (name == "Spectator" and p.className == "Spectator")
+    end
+    player.GetIsAlive = function(p) return p.alive ~= false end
+    player.GetResources = function(p) return p.pres end
     player.SetControllerClient = function(p, client) p.client = client; client.player = p end
     player.GetIsSpectator = function(p) return p.client ~= nil and p.client.spectator end
     player.RemoveSpectators = function() end
-    player.GetPlayerInfo = function(p) p.playerInfo = p.playerInfo or { owner = p } return p.playerInfo end
-    player.SetPlayerInfo = function(p, info) p.playerInfo = info end
+    player.GetPlayerInfo = function(p) return p.playerInfo end
+    player.SetPlayerInfo = function(p, info)
+        if info then p.playerInfo = info; info.player = p end
+    end
     player.AddTimedCallback = function(p, fn) fn(p) end
     Players[#Players + 1] = player
     return player
 end
 
-function CreateEntity(mapName, origin, team) return NewEntity(team, "Skulk") end
-function DestroyEntity(player) RemovePlayer(player) end
+local function NewInfo()
+    local info = {}
+    Infos[#Infos + 1] = info
+    return info
+end
+
+function CreateEntity(mapName, origin, team)
+    if mapName == PlayerInfoEntity.kMapName then return NewInfo() end
+    return NewEntity(team, "Skulk")
+end
+function DestroyEntity(entity)
+    assert(not entity.destroyed, "an entity destroyed twice")
+    entity.destroyed = true
+    for i, info in ipairs(Infos) do
+        if info == entity then table.remove(Infos, i) return end
+    end
+    -- A player takes its scoreboard entry with it, as Player:OnDestroy does.
+    if entity.playerInfo and not entity.playerInfo.destroyed then DestroyEntity(entity.playerInfo) end
+    RemovePlayer(entity)
+end
 
 local function NewClient(steamId, virtual)
     local client = { id = nextClientId, steamId = steamId, virtual = virtual == true, spectator = false }
@@ -188,10 +216,17 @@ local function LoadServer()
             local player = NewEntity(kTeamReadyRoom, "ReadyRoomPlayer")
             player:SetControllerClient(client)
             player.name = client.name or ("Player" .. client.steamId)
+            player:SetPlayerInfo(NewInfo())
             return player
         end,
         OnClientDisconnect = function(self, client)
-            if client.player then RemovePlayer(client.player) end
+            local player = client.player
+            if player then
+                local pres = self.clientpres[client.steamId] or {}
+                pres[player.team] = player.pres
+                self.clientpres[client.steamId] = pres
+                DestroyEntity(player)
+            end
         end,
         GetCanJoinTeamNumber = function(self, player, team)
             if team == kTeam1Index and TeamCount(1) > TeamCount(2) then return false end
@@ -205,6 +240,8 @@ local function LoadServer()
             local client = player.client
             local newPlayer = NewEntity(team, team == 3 and "Spectator" or (team == 0 and "ReadyRoomPlayer" or "Marine"))
             newPlayer.name, newPlayer.score, newPlayer.kills, newPlayer.skill = player.name, player.score, player.kills, player.skill
+            newPlayer:SetPlayerInfo(player.playerInfo)
+            player.playerInfo = nil
             RemovePlayer(player)
             newPlayer:SetControllerClient(client)
             client.spectator = team == kSpectatorIndex
@@ -212,7 +249,7 @@ local function LoadServer()
         end,
         ResetGame = function(self) end
     }, { __index = _G.Gamerules })
-    local instance = setmetatable({ state = kGameState.NotStarted }, { __index = NS2Gamerules })
+    local instance = setmetatable({ state = kGameState.NotStarted, clientpres = {} }, { __index = NS2Gamerules })
     GetGamerules = function() return instance end
     for _, file in ipairs(kSharedFiles) do dofile(file) end
     for _, file in ipairs(kFiles) do dofile(file) end
@@ -383,6 +420,84 @@ check(Swap(nil, "Leo", "Pepe") == "Done." and leo.player == pepeBody and pepeBod
 check(not SSM.SavedPlayers_IsHeld(4) and SaidToAll("Leo took Pepe's place."), "and says so")
 
 -- ---------------------------------------------------------------------------------------------
+-- Scoreboard entries (v1.3c)
+
+local function RowsFor(player)
+    local count = 0
+    for _, info in ipairs(Infos) do if info.player == player then count = count + 1 end end
+    return count
+end
+
+-- Entries that show a player who is gone.
+local function StaleRows()
+    local count = 0
+    for _, info in ipairs(Infos) do
+        local found = false
+        for _, p in ipairs(Players) do if p == info.player then found = true end end
+        if not found then count = count + 1 end
+    end
+    return count
+end
+
+local juanBody2 = juan.player
+local juanOldInfo = juanBody2.playerInfo
+Disconnect(juan)
+check(SSM.SavedPlayers_IsHeld(3), "Juan is kept again")
+check(RowsFor(juanBody2) == 1 and juanBody2.playerInfo ~= juanOldInfo and juanOldInfo.destroyed,
+    "the held body has one scoreboard entry of its own, Juan's old one is gone")
+check(StaleRows() == 0, "no entry left for a player who is gone")
+juan = Connect(3, "Juan")
+check(juan.player == juanBody2 and RowsFor(juanBody2) == 1 and StaleRows() == 0,
+    "back in: the body has one entry again, the [D/C] one is gone")
+
+-- ---------------------------------------------------------------------------------------------
+-- Dead players (v1.3c)
+
+-- A held body that dies is let go, and the resources are kept for the original.
+Disconnect(juan)
+check(SSM.SavedPlayers_IsHeld(3), "Juan is kept, alive")
+juanBody2.alive, juanBody2.pres = false, 40
+Run(1)
+check(not SSM.SavedPlayers_IsHeld(3) and Body("[D/C] Juan") == nil, "a held body that dies is let go")
+check(Gamerules.clientpres[3][2] == 40, "its resources are kept for Juan")
+check(StaleRows() == 0 and TeamCount(2) == 1, "nothing left behind, the slot is free")
+
+-- Dead when disconnecting: not kept, but the pause still happens.
+juan = Connect(3, "Juan")
+check(juan.spectator, "Juan starts as a spectator now")
+Join(juan, 2)
+juan.player.alive, juan.player.pres = false, 25
+local pausedFor
+SSMPause_TriggerDisconnectPause = function(name, team) pausedFor = name .. "/" .. team return false end
+Sent = {}
+Disconnect(juan)
+check(not SSM.SavedPlayers_IsHeld(3) and TeamCount(2) == 1, "a dead player who disconnects is not kept")
+check(pausedFor == "Juan/2", "the disconnect pause is still asked for")
+check(Gamerules.clientpres[3][2] == 25, "the game keeps their resources")
+check(not SaidToAll("Juan disconnected. Join the Aliens to take their place."), "no 'take their place' line")
+SSMPause_TriggerDisconnectPause = function() return false end
+
+-- Waiting to respawn (a team spectator): not kept either.
+juan = Connect(3, "Juan")
+Join(juan, 2)
+juan.player.className = "Spectator"
+Disconnect(juan)
+check(not SSM.SavedPlayers_IsHeld(3), "a player waiting to respawn is not kept")
+
+-- Dies just before someone joins: the joiner just joins, the body is let go.
+juan = Connect(3, "Juan")
+Join(juan, 2)
+local raceBody = juan.player
+Disconnect(juan)
+check(SSM.SavedPlayers_IsHeld(3), "Juan is kept")
+raceBody.alive = false
+local mia = Connect(6, "Mia")
+local joined, miaPlayer = Join(mia, 2)
+check(joined and miaPlayer ~= raceBody and miaPlayer.team == 2 and miaPlayer.name == "Mia",
+    "joining a team whose held body just died: a normal join")
+check(not SSM.SavedPlayers_IsHeld(3) and Body("[D/C] Juan") == nil and TeamCount(2) == 2, "the dead body is let go")
+
+-- ---------------------------------------------------------------------------------------------
 -- Round reset
 
 local anaBody = ana.player
@@ -390,6 +505,7 @@ Disconnect(ana)
 check(SSM.SavedPlayers_IsHeld(1), "Ana is kept")
 Gamerules:ResetGame()
 check(not SSM.SavedPlayers_IsHeld(1) and Body("[D/C] Ana") == nil, "a round reset removes held bodies")
+check(StaleRows() == 0, "and their scoreboard entries")
 
 -- Switched off.
 Files["SSM_SavedPlayers.json"] = { Enabled = false }
