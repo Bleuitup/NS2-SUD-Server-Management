@@ -213,27 +213,27 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
   The scoreboard shows them as `SUD Queue`. `!exitq` leaves it, `!listq` lists who is in it.
 - When two players in the pool can join, one per team, and keep the difference between the team
   averages within 75 elo, everyone else sees who they are and the difference now and after, and
-  the two are asked privately to type **`!ready`** within 30 seconds. Their game window flashes on
+  the two are asked privately to type **`!readyq`** within 30 seconds. Their game window flashes on
   the taskbar.
 - Team averages: fielders at their field skill for that team, commanders at their commander skill
   for that team. Marine and alien skill differ per player, so every pair is tried both ways round;
   the pair and way round that leaves the smallest difference wins. If the game is already further
   apart than 75, a pair that brings it closer is allowed.
-- Once both typed `!ready`, the pair is checked again against the teams as they are then and put
+- Once both typed `!readyq`, the pair is checked again against the teams as they are then and put
   in. They join like anyone else (respawn queue, no instant spawn). The lock is lifted for those
   two joins and put straight back, without a chat message.
 - **Needs Lockteams, with the teams locked.** Without a lock people come and go freely and break
   the pairing, so `!joinq` is refused unless [Shine] Lockteams V2 is running and the teams are
   locked. If an admin unlocks the teams mid-round, the pool keeps everyone but pauses (they are told
-  once, and a pair waiting on `!ready` is cancelled) until the teams are locked again.
+  once, and a pair waiting on `!readyq` is cancelled) until the teams are locked again.
 - **Not before 30 seconds into the round.** `!joinq` works from the start, but the first pair is only picked 30 seconds in, from everyone who asked by then, so it is not a race to type `!joinq` first. Players who join the pool earlier are told how long is left.
-- Whoever does not type `!ready` in time leaves the pool; whoever did stays and can be paired again.
-- `!ready` from anyone without a pair waiting is left alone, so it still works for Shine's
-  tournament mode ready-up.
+- Whoever does not type `!readyq` in time leaves the pool; whoever did stays and can be paired again.
+- The command is `!readyq`, not `!ready`, so it never mixes with Shine's tournament mode ready-up
+  (v1.3c: on the live 8v8, the pool's `!ready` did not get through).
 - Uneven teams (usually someone who crashed, whose body Disconnected players keeps) and 8v8 are
   left alone, and so is a team holding a disconnected body.
 - The pool empties when the round ends. Players in it are not kicked by Shine's AFK kick while they
-  wait; the 30-second `!ready` deadline catches anyone who walked away.
+  wait; the 30-second `!readyq` deadline catches anyone who walked away.
 - It is on by default. **`sud_joinpool off`** / **`on`** in the console switches it for the rest of
   the round; the next round starts on again. The server console and every Shine admin (anyone in
   a Shine user group) can use it, with no config change.
@@ -247,6 +247,6 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 | `Enabled` | `true` | `false`: the join pool is off |
 | `EnabledOnThunderdome` | `false` | `true` also runs it on Thunderdome games; an admin's `sud_joinpool on` turns it on there for one round |
 | `MaxDifference` | `75` | largest team-average difference a pair may leave |
-| `ReadySeconds` | `30` | time the pair has to type `!ready` |
+| `ReadySeconds` | `30` | time the pair has to type `!readyq` |
 | `OfferDelaySeconds` | `30` | no pair is offered before this many seconds into the round, so the best pair of everyone who asked is picked, not the first two |
 | `TeamSizes` | `[6, 7]` | team sizes (per team, both equal) the pool runs at |

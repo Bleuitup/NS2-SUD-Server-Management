@@ -2,12 +2,12 @@
 --
 -- During a live 6v6 or 7v7 round, spectators and ready-room players type !joinq to wait for a
 -- place. When two of them can join, one per team, and keep the average elo gap within the limit,
--- both are asked to type !ready within 30 seconds; once both have, they are put on the teams that
+-- both are asked to type !readyq within 30 seconds; once both have, they are put on the teams that
 -- keep the gap smallest. It replaces admins pairing joiners by hand. The work started as the
 -- balanced queue of Lockteams v2 2.3 (never released), which is where the pair maths comes from.
 --
 -- Rules (the author's picks, 2026-11-21):
---   * Only during a live round (state Started): typing !joinq and then !ready shows the player is
+--   * Only during a live round (state Started): typing !joinq and then !readyq shows the player is
 --     actually there. The pool is cleared when the round ends or resets.
 --   * Only when the teams are exactly 6v6 or 7v7 (TeamSizes). Uneven teams are left alone: they
 --     usually mean someone crashed, and Saved Players then holds their body, which a joiner would
@@ -23,18 +23,18 @@
 --   * No pair before 30 s into the round (OfferDelaySeconds; author, 2026-11-21): !joinq works from
 --     the start, but the best pair of everyone who asked is picked then, so it is not a race to
 --     type !joinq first.
---   * 30 s to type !ready (ReadySeconds). Whoever does not leaves the pool; whoever did stays.
+--   * 30 s to type !readyq (ReadySeconds). Whoever does not leaves the pool; whoever did stays.
 --     When both are ready, the pair is checked again against the teams as they are then.
 --   * Lockteams is required (author, 2026-11-21): the pool only runs while Lockteams v2 is loaded
 --     and the teams are locked, because with open teams people come and go and break the pairing.
 --     !joinq is refused otherwise. If the teams are unlocked mid-round the pool is kept but paused
 --     (members are told once, a pending pair is cancelled) until they are locked again. For the
 --     two joins the lock is lifted and put straight back, silently.
---   * Queued players are shielded from Shine's AFK kick while they wait (the !ready deadline
+--   * Queued players are shielded from Shine's AFK kick while they wait (the !readyq deadline
 --     catches anyone who walked away).
 --   * Off on Thunderdome by default (author, 2026-11-21): EnabledOnThunderdome (false) turns it on
 --     there; an admin's sud_joinpool on turns it on for the round.
---   * Commands: !joinq, !exitq, !listq, !ready; sud_joinpool on|off for admins (this round only).
+--   * Commands: !joinq, !exitq, !listq, !readyq; sud_joinpool on|off for admins (this round only).
 --   * The scoreboard shows "SUD Queue" in the status column of queued players (client part).
 
 local kConfigFile = "SSM_JoinPool.json"
@@ -88,7 +88,7 @@ end
 -- State -------------------------------------------------------------------------------------
 
 local Pool = {}           -- { steamId, since } in the order they asked
-local Proposal = nil      -- the pair asked to type !ready
+local Proposal = nil      -- the pair asked to type !readyq
 local offThisRound = false
 local onThisRound = false    -- an admin's sud_joinpool on: lifts the Thunderdome default this round
 local lastEvaluate, lastBroadcast, lastShield = -math.huge, -math.huge, -math.huge
@@ -464,7 +464,7 @@ local function Place(marineClient, alienClient)
     end)
 end
 
--- Both typed !ready: check the pair again against the teams as they are now, then place them.
+-- Both typed !readyq: check the pair again against the teams as they are now, then place them.
 local function Complete()
     local proposal = Proposal
     ClearProposal()
@@ -759,12 +759,11 @@ SSM.AddChatCommand("listq", function(client)
 end)
 SSM.ListCommand("!listq", "cmd_listq")
 
-SSM.AddChatCommand("ready", function(client)
+SSM.AddChatCommand("readyq", function(client)
     local steamId = SteamIdOf(client)
-    -- Only a player with a pair waiting is answered; for anyone else !ready is left alone, so it
-    -- still reaches Shine's tournament mode ready-up (author, 2026-11-21) and shows in chat.
     if not (steamId and Proposal and (Proposal.marine == steamId or Proposal.alien == steamId)) then
-        return false
+        Say(client, "joinpool_ready_none")
+        return
     end
     Proposal.ready[steamId] = true
     if Proposal.ready[Proposal.marine] and Proposal.ready[Proposal.alien] then
@@ -774,7 +773,7 @@ SSM.AddChatCommand("ready", function(client)
         Say(client, "joinpool_ready_wait", other)
     end
 end)
-SSM.ListCommand("!ready", "cmd_ready")
+SSM.ListCommand("!readyq", "cmd_ready")
 
 -- sud_joinpool on|off, this round only (the pool is on by default and every new round starts on).
 -- Who: the server console and every Shine admin, i.e. anyone in a Shine user group, with no

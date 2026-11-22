@@ -2,7 +2,7 @@
 --   lua test/joinpool.lua        (from the repo root)
 --
 -- Stubs only the engine, vanilla and Shine globals the files touch. Proves who gets offered, the
--- gap maths, !ready, the Lockteams lift, expiry and the commands; it says nothing about a real
+-- gap maths, !readyq, the Lockteams lift, expiry and the commands; it says nothing about a real
 -- server (spawning, the scoreboard, the taskbar flash).
 
 local kSharedFiles = { "source/lua/SSM/Messages.lua", "source/lua/SSM/Strings.lua", "source/lua/SSM/Commands.lua" }
@@ -221,7 +221,7 @@ local prop = SSM.JoinPool_GetProposal()
 check(prop ~= nil, "two players at 6v6: offered")
 check(Has(other, "are the best suitable joiners"), "public line to others")
 check(not Has(p1, "best suitable joiners") and not Has(p2, "best suitable joiners"), "public line not to the pair")
-check(Has(p1, "Type !ready within 30 seconds") and Has(p2, "Type !ready within 30 seconds"), "private line to both")
+check(Has(p1, "Type !readyq within 30 seconds") and Has(p2, "Type !readyq within 30 seconds"), "private line to both")
 local flashes = 0
 for _, n in ipairs(Net) do if n.name == "SSM_JoinPoolAttention" then flashes = flashes + 1 end end
 check(flashes == 2, "taskbar flash sent to both")
@@ -229,10 +229,10 @@ local queueMsg
 for _, n in ipairs(Net) do if n.name == "SSM_JoinPoolQueue" then queueMsg = n.data.clients end end
 check(queueMsg and queueMsg:find("," .. p1.client.id .. ",", 1, true) and queueMsg:find("," .. p2.client.id .. ",", 1, true), "scoreboard list has both")
 
-Say(p1, "!ready")
+Say(p1, "!readyq")
 check(Has(p1, "Waiting for"), "first ready waits")
 check(#Joins == 0, "nobody moved after one ready")
-Say(p2, "!ready")
+Say(p2, "!readyq")
 check(#Joins == 2, "both moved after both ready")
 check(Joins[1].name == "Juancito", "ready-room player placed before the spectator")
 check(Joins[1].force == nil and Joins[2].force == nil, "joins are not forced (normal respawn)")
@@ -271,8 +271,8 @@ Run(5)
 local pausedLines = 0
 for _, text in ipairs(TextsTo(p1)) do if text:find("paused", 1, true) then pausedLines = pausedLines + 1 end end
 check(pausedLines == 1 and SSM.JoinPool_GetProposal() == nil, "unlocked: told once, nobody offered")
-Say(p1, "!ready")
-check(#Joins == 0, "unlocked: !ready does nothing")
+Say(p1, "!readyq")
+check(#Joins == 0, "unlocked: !readyq does nothing")
 LockTeams.TeamLock = true
 Run(1.5)
 check(Has(p1, "locked again") and SSM.JoinPool_GetProposal() ~= nil, "locked again: running and offered")
@@ -363,12 +363,12 @@ check(SSM.JoinPool_GetProposal() == nil, "two spectators, one free slot: not off
 Reset(); m, a = Teams(6)
 p1 = NewPlayer("Fast", kSpectatorIndex, 1000); p2 = NewPlayer("Slow", kSpectatorIndex, 1000)
 Say(p1, "!joinq"); Say(p2, "!joinq"); Run(1.5)
-Say(p1, "!ready")
+Say(p1, "!readyq")
 Run(31)
 local pool = SSM.JoinPool_GetPool()
 check(#pool == 1 and pool[1].steamId == p1.client.steamId, "expired: the ready player stays, the other leaves")
-check(Has(p2, "did not type !ready in time"), "expired: told the slow one")
-check(Has(p1, "Slow did not type !ready"), "expired: told the ready one")
+check(Has(p2, "did not type !readyq in time"), "expired: told the slow one")
+check(Has(p1, "Slow did not type !readyq"), "expired: told the ready one")
 check(Has(m[1], "Not ready in time: Slow"), "expired: public line")
 check(#Joins == 0, "expired: nobody moved")
 
@@ -377,13 +377,13 @@ Reset(); m, a = Teams(6)
 p1 = NewPlayer("P1", kSpectatorIndex, 1000); p2 = NewPlayer("P2", kSpectatorIndex, 1000)
 Say(p1, "!joinq"); Say(p2, "!joinq"); Run(1.5)
 a[1].skill = 0; a[2].skill = 0   -- aliens drop to 833: gap +167, pair cannot fix it below
-Say(p1, "!ready"); Say(p2, "!ready")
+Say(p1, "!readyq"); Say(p2, "!readyq")
 check(#Joins == 2, "still placed when it improves an already-wide gap")
 Reset(); m, a = Teams(6)
 p1 = NewPlayer("P1", kSpectatorIndex, 1000); p2 = NewPlayer("P2", kSpectatorIndex, 1000)
 Say(p1, "!joinq"); Say(p2, "!joinq"); Run(1.5)
 NewPlayer("M7", kTeam1Index, 1000)   -- now 7v6
-Say(p1, "!ready"); Say(p2, "!ready")
+Say(p1, "!readyq"); Say(p2, "!readyq")
 check(#Joins == 0, "teams no longer even: cancelled")
 check(Has(p1, "The teams changed") and #SSM.JoinPool_GetPool() == 2, "cancelled: both told and kept")
 
@@ -392,18 +392,17 @@ Reset(); m, a = Teams(6)
 p1 = NewPlayer("P1", kSpectatorIndex, 1000); p2 = NewPlayer("P2", kSpectatorIndex, 1000)
 Say(p1, "!joinq"); Say(p2, "!joinq"); Run(1.5)
 Gamerules.failJoinTeam = SSM.JoinPool_GetProposal().alien == p1.client.steamId and kTeam2Index or kTeam2Index
-Say(p1, "!ready"); Say(p2, "!ready")
+Say(p1, "!readyq"); Say(p2, "!readyq")
 check(#OnTeam(kTeam1Index) == 6 and #OnTeam(kTeam2Index) == 6, "half-done join undone")
 check(LockTeams.TeamLock == true, "lock restored after a failure")
 
--- !exitq, !listq, !ready with nothing pending.
+-- !exitq, !listq, !readyq with nothing pending.
 Reset(); m, a = Teams(6)
 p1 = NewPlayer("Ana", kSpectatorIndex, 1000)
 Say(p1, "!listq"); check(Has(p1, "Nobody is in the join pool"), "listq empty")
 Say(p1, "!joinq"); Say(p1, "!listq"); check(Has(p1, "Join pool (1): Ana"), "listq names")
 Say(p1, "!joinq"); check(Has(p1, "already in the join pool"), "joinq twice")
-local repliesBefore = #TextsTo(p1)
-check(Say(p1, "!ready") == nil and #TextsTo(p1) == repliesBefore, "ready with nothing pending: left alone, no reply")
+check(Say(p1, "!readyq") == "" and Has(p1, "Nobody has asked you to type !readyq"), "readyq with nothing pending: private reply")
 Say(p1, "!exitq"); check(Has(p1, "You left the join pool") and #SSM.JoinPool_GetPool() == 0, "exitq")
 Say(p1, "!exitq"); check(Has(p1, "not in the join pool"), "exitq when not in")
 
@@ -488,12 +487,13 @@ p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 Say(p1, "!lang es"); Say(p1, "!joinq")
 check(Has(p1, "Está en la cola para entrar"), "Spanish reply")
 
--- !ready without a pair waiting is left alone (shown in chat, reaches Shine's tournament mode).
+-- Plain !ready is not the join pool's (Shine's tournament mode uses it): left alone, even from a
+-- player with a pair waiting.
 Reset(); m, a = Teams(6)
 p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 local before = #TextsTo(p1)
-check(Say(p1, "!ready") == nil and #TextsTo(p1) == before, "!ready with no pair: not swallowed, no reply")
-check(Say(m[1], "!ready") == nil, "a commander's pregame-style !ready passes through")
+check(Say(p1, "!ready") == nil and #TextsTo(p1) == before, "!ready: not swallowed, no reply")
+check(Say(m[1], "!ready") == nil, "a commander's !ready passes through")
 
 -- Thunderdome: off by default, on with EnabledOnThunderdome or an admin's sud_joinpool on.
 Reset(); m, a = Teams(6)

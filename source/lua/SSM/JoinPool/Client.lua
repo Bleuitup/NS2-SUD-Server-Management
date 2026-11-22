@@ -3,7 +3,7 @@
 -- Two things the server cannot do on its own:
 --   * The scoreboard: players in the join pool show "SUD Queue" in the status column of the
 --     spectator / ready room block, where it would otherwise say "Spectator" (or nothing).
---   * The taskbar: when a player is asked to type !ready, their game window flashes, the same
+--   * The taskbar: when a player is asked to type !readyq, their game window flashes, the same
 --     call the game makes when a round is about to start (Client.WindowNeedsAttention).
 
 local kLabel = "SUD Queue"

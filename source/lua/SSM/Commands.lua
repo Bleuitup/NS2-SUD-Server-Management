@@ -32,11 +32,7 @@ local function OnPlayerSay(client, message)
         return
     end
 
-    -- A handler returns false to leave the message alone: it is shown in chat as usual, and other
-    -- mods' commands of the same name (Shine's tournament mode !ready) are not disturbed.
-    if handler(client, args) == false then
-        return
-    end
+    handler(client, args)
     return ""
 end
 

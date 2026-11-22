@@ -129,8 +129,8 @@ ScoreBoard.
 - **One chat router for every feature.** `Shine.Hook.Add("PlayerSay", "SSM_Chat", ...)` - not a
   Shine plugin, not Shine commands, so no admin-log line - matches `!word` or `/word` (any case,
   arguments after a space), runs the handler and returns `""` so nobody else sees the typed
-  command. Unknown words are left alone, and so is any message whose handler returns `false`
-  (shown in chat, passed on to other hooks). The hook is added on the first `UpdateServer`, because
+  command. Unknown words are left alone. Never reuse a word another mod's chat command has
+  (Shine's tournament mode owns `!ready` / `!rdy`). The hook is added on the first `UpdateServer`, because
   load order between mods is not guaranteed - the same opportunistic pattern Hive Spawn Selector
   uses for CustomSpawns.
 - **`!help`** (author's request, 2026-11-16; first built as `!commands`, renamed because "!help" is shorter and everyone knows the word): one private chat
@@ -315,17 +315,19 @@ one client fix (below).
 ## Feature: Join Pool (`JoinPool/Shared.lua`, `JoinPool/Server.lua`, `JoinPool/Client.lua`; branch `feat/join-pool`, 2026-11-21)
 
 Players waiting to get into a live 6v6 or 7v7 type `!joinq`; when two of them can come in, one
-per team, within the elo limit, they are asked to `!ready` and placed. Replaces admins pairing
+per team, within the elo limit, they are asked to `!readyq` and placed. Replaces admins pairing
 joiners by hand. The pair maths started as the balanced queue of Lockteams v2 2.3 (never released;
 kept in `Shine-Lockteams-join-queue-2.3.bundle` next to the Lockteams repo, whose local `main` was
 reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.21` was kept).
 
 ### Rules (author's picks, 2026-11-21)
 
-- **`!ready` is only claimed from a player with a pair waiting** (author, 2026-11-21, v1.3b); for
-  anyone else it is left alone, so it reaches Shine's tournament mode ready-up, which is on for
-  Thunderdome on the 6v6 since 2026-11-21 (Shine's command hook runs first anyway, at max
-  priority, and returns nothing for `!`).
+- **`!readyq`, not `!ready`** (author, 2026-11-21, v1.3c). v1.3b answered `!ready` only from a
+  player with a pair waiting and let everyone else's through to Shine's tournament mode, but on
+  the live 8v8 the pool's `!ready` still did not work: most likely Shine's own `!ready` handled the
+  message first (Shine's command hook runs at max priority; with `SilentChatCommands` it stops the
+  chain). Not confirmed in the logs. The router's `return false` pass-through was dropped with it.
+  `!readyq` with nothing pending answers privately (`joinpool_ready_none`).
 - **Off on Thunderdome by default** (author, 2026-11-21, v1.3b): `EnabledOnThunderdome` (false);
   an admin's `sud_joinpool on` lifts it for the round (`onThisRound`). `!joinq` there answers
   `joinpool_thunderdome`.
@@ -338,7 +340,7 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 - **Only 6v6 and 7v7** (`TeamSizes`), both teams the same size. **Uneven teams are shelved:** they
   usually mean a crash, and Saved Players holds the body, which a joiner would take over. Any
   virtual client on a team (held body, bot) pauses the pool. Idea for later (author): a joiner
-  could `!ready` to take the crashed player's place and give it back when they return.
+  could `!readyq` to take the crashed player's place and give it back when they return.
 - **Live rounds only** (game state Started): typing the commands shows the player is there. The
   pool empties when the round ends; `ResetGame` also switches an admin `off` back on.
 - **Who:** spectators and the ready room. Spectators need a free player slot (reserved slots
@@ -348,7 +350,7 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
   longest (lowest sum of queue positions). One pair is asked at a time.
 - **Messages:** everyone but the pair gets "X (Marines) and Y (Aliens) are the best suitable
   joiners. Elo difference now: +75 Marines. After joining: +20 Aliens. They have 30 seconds to type
-  !ready." (author's wording, tidied). The pair get a private line each. **Every line goes to each
+  !readyq." (author's wording, tidied). The pair get a private line each. **Every line goes to each
   player in their own language**, the public ones too (sent one by one, so `!lang` applies),
   unlike the other features, where messages to everyone stay English.
 - **No pair before 30 s into the round** (`OfferDelaySeconds`; author, 2026-11-21, v1.3a): `!joinq`
@@ -356,7 +358,7 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
   picked, not the first two to type it ("otherwise it becomes a race"). Players who join the pool
   during the wait get `joinpool_wait_start` with the seconds left. The wait starts when the server
   first sees the round live, and again every round.
-- **`!ready` within 30 s** (`ReadySeconds`). Whoever does not type it leaves the pool; whoever
+- **`!readyq` within 30 s** (`ReadySeconds`). Whoever does not type it leaves the pool; whoever
   did stays and can be paired again at once. When both are ready the pair is re-checked against
   the teams as they are (still even, allowed size, slots, limit); otherwise cancelled, both stay.
 - **Lockteams is required** (author, 2026-11-21, after the first build ran without it): the pool
@@ -372,8 +374,8 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
   player at once (`ReplaceRespawnPlayer`); unforced, they go through the respawn queue like anyone
   joining mid-round. If the second join fails, the first is moved back (forced, to where it was).
 - **AFK kick:** queued players get `afkkick:ResetAFKTime` every 10 s, so Shine's kick-on-full
-  never picks them while they wait. The `!ready` deadline catches anyone who walked away.
-- **Commands:** `!joinq`, `!exitq`, `!listq`, `!ready` (chat router; the author: "!exitq is more
+  never picks them while they wait. The `!readyq` deadline catches anyone who walked away.
+- **Commands:** `!joinq`, `!exitq`, `!listq`, `!readyq` (chat router; the author: "!exitq is more
   language friendly"); `sud_joinpool on|off` (console), for the current round; **on by default**,
   every round starts on (author's pick). Access: the server console and **every Shine admin**,
   i.e. anyone with Shine user data (`Shine:GetUserData`), no group config needed (author:
@@ -397,8 +399,7 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 ### Not checked in game yet
 
-- The scoreboard label and the flash; that `!ready` does not clash with Shine tournamentmode's
-  `!ready` / `!rdy` if that plugin is on; the two joiners' respawn; Lockteams' own join-spam counter
+- The scoreboard label and the flash; `!readyq` (v1.3c); the two joiners' respawn; Lockteams' own join-spam counter
   not firing on these joins.
 
 ## Open threads (remind the author)
@@ -498,6 +499,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.
