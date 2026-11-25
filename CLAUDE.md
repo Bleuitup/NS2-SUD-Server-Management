@@ -32,6 +32,7 @@ test/commmatch.lua                 logic test for Commander Match
 test/pause.lua                     logic test for the pause's server part
 test/savedplayers.lua              logic test for Saved Players (with Spectator On Connect)
 test/joinpool.lua                  logic test for Join Pool
+test/alltalk.lua                   logic test for All Talk
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -418,6 +419,30 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 - The scoreboard label and the flash; `!readyq` (v1.3c); the two joiners' respawn; Lockteams' own join-spam counter
   not firing on these joins.
 
+## Feature: All Talk (`AllTalk/Server.lua`; branch `feat/alltalk`, 2026-11-25, planned as v1.4)
+
+Turns on Shine's all talk between rounds.
+
+### Rules (author's picks, 2026-11-25)
+
+- On at round end (`NS2Gamerules:EndGame`, after vanilla) and at map load, only if it is off.
+- **Never turned off by the mod** (asked: off at round start, off only if SSM turned it on, or
+  never; the author chose never). An admin turns it off with `!alltalk`.
+- Not on Thunderdome. `SSM_AllTalk.json` `Enabled` (true) is the off switch.
+
+### How it works
+
+- Shine's `basecommands` plugin, found with `Shine:IsExtensionEnabled("basecommands")`:
+  `IsAllTalkEnabled("AllTalk")`, then `SetAllTalkEnabled("AllTalk", true, true)` (the third
+  argument: not saved to Shine's config, so the admin's `AllTalk` there is untouched; Shine
+  reloads it on a map change, hence the map-load rule) and `NotifyAllTalkState("AllTalk", true)`
+  for Shine's own translated line. Same calls as `sh_alltalk`, which also fires Shine's
+  `OnAllTalkStateChange` hook.
+- Map load: `UpdateServer` tries once a second until the plugin is enabled, then stops; gives up
+  after 60 s with a log line. No Shine: nothing happens.
+- Not checked in game: Shine's line wording, and that the 8v8/6v6 Shine configs have
+  `basecommands` enabled.
+
 ## Open threads (remind the author)
 
 - **v1.3c published and tagged 2026-11-22** (`cd2cd59`, merged into `main`; Workshop updated
@@ -503,6 +528,9 @@ Parked or dropped (2026-11-16):
   round reset, the off switch, dead players not kept and a held body that dies let go with its
   pres kept (v1.3c), one scoreboard entry per body and none left over. Not the engine hand-over
   itself.
+- `lua test/alltalk.lua`: on at map load and round end, Shine's line only when it changes, not
+  saved, never turned off, an admin's off kept until the round ends, the plugin enabling late or
+  never, Thunderdome, no Shine, the off switch.
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 
@@ -523,6 +551,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, version name assumed 2026-11-25). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

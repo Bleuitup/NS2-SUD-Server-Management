@@ -254,3 +254,25 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 | `ReadySeconds` | `30` | time the pair has to type `!readyq` |
 | `OfferDelaySeconds` | `30` | no pair is offered before this many seconds into the round, so the best pair of everyone who asked is picked, not the first two |
 | `TeamSizes` | `[6, 7]` | team sizes (per team, both equal) the pool runs at |
+
+## All talk
+
+Turns on Shine's all talk (the same switch as `!alltalk` and `sh_alltalk`) so everyone can hear
+each other between rounds.
+
+- On when a round ends, and when a map loads, if it is off. Shine shows its usual "all talk
+  enabled" line.
+- Never turned off by the mod: an admin turns it off with `!alltalk`. Once a round has ended it
+  stays on until someone does.
+- Not saved to Shine's config file, so Shine's own `AllTalk` setting stays as the admin set it.
+  Shine reloads that on a map change, which is why the map load turns it back on.
+- Not on Thunderdome games. Needs Shine with its `basecommands` plugin; without it nothing
+  happens.
+
+### Server settings
+
+`SSM_AllTalk.json` in the server's config folder, created on first run:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `Enabled` | `true` | `false`: the mod never touches all talk |
