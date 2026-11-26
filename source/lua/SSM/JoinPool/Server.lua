@@ -40,6 +40,10 @@
 --     !joinq would take them joins the pool exactly as with !joinq and stays a spectator. Any
 --     other time F4 works as usual. F4JoinsQueue (true) switches it off. The servers do not run
 --     Shine-Epsilon's readyroomqueue, which uses the same key for player slots.
+--   * Spectator hint (v1.5, author 2026-11-26): from 30 s into a live round and every 60 s after,
+--     spectators who are not queued get "press F4 or type !joinq" privately, while the pool could
+--     place them (CurrentTeams). Mid-round the only new spectators are people who just connected,
+--     who may be away or alt-tabbed, hence the repeat. SpectatorHintEverySeconds 0 switches it off.
 
 local kConfigFile = "SSM_JoinPool.json"
 local kDefaultConfig = {
@@ -53,7 +57,11 @@ local kDefaultConfig = {
     OfferDelaySeconds = 30,
     TeamSizes = { 6, 7 },
     -- A spectator's F4 joins the pool when !joinq would (false: F4 always works as usual).
-    F4JoinsQueue = true
+    F4JoinsQueue = true,
+    -- Spectators not in the pool are told how to join it this many seconds into a live round,
+    -- then every SpectatorHintEverySeconds (0: never).
+    SpectatorHintStartSeconds = 30,
+    SpectatorHintEverySeconds = 60
 }
 -- How often the pool is looked at, and how often the queued list is re-sent to every client
 -- (so players who connect later get it too).
@@ -100,6 +108,7 @@ local onThisRound = false    -- an admin's sud_joinpool on: lifts the Thunderdom
 local lastEvaluate, lastBroadcast, lastShield = -math.huge, -math.huge, -math.huge
 local poolChanged = true
 local roundStartedAt = nil   -- Shared.GetTime() when the current round went live
+local nextHintAt = nil       -- when the spectator hint is next due this round
 
 -- Still inside the round-start wait (OfferDelaySeconds): seconds left, or nil.
 local function OfferWaitLeft()
@@ -649,6 +658,34 @@ local function Evaluate()
     end
 end
 
+-- The spectator hint: due SpectatorHintStartSeconds into the round, then every
+-- SpectatorHintEverySeconds. A due hint is skipped (not held back) while the pool could not place
+-- anyone, so nobody is told to queue for a game it would never fill.
+local function HintSpectators(now)
+    local every = Config.SpectatorHintEverySeconds
+    if not roundStartedAt or type(every) ~= "number" or every <= 0 then
+        return
+    end
+    nextHintAt = nextHintAt or roundStartedAt + (tonumber(Config.SpectatorHintStartSeconds) or 0)
+    if now < nextHintAt then
+        return
+    end
+    repeat
+        nextHintAt = nextHintAt + every
+    until nextHintAt > now
+    if not CurrentTeams() then
+        return
+    end
+    local key = Config.F4JoinsQueue == true and "joinpool_hint" or "joinpool_hint_no_f4"
+    Server.ForAllPlayers(function(player)
+        local client = Server.GetOwner(player)
+        local steamId = SteamIdOf(client)
+        if steamId and player:GetTeamNumber() == kSpectatorIndex and not PoolIndex(steamId) then
+            Say(client, key)
+        end
+    end)
+end
+
 Event.Hook("UpdateServer", function()
     local ok, err = pcall(function()
         local now = Shared.GetTime()
@@ -657,7 +694,10 @@ Event.Hook("UpdateServer", function()
             roundStartedAt = roundStartedAt or now
         else
             roundStartedAt = nil
+            nextHintAt = nil
         end
+
+        HintSpectators(now)
 
         if (#Pool > 0 or Proposal) and not IsLive() then
             ClearPool("joinpool_round_over")

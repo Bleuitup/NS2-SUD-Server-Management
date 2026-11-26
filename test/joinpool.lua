@@ -215,7 +215,7 @@ local p1 = NewPlayer("Pepito", kSpectatorIndex, 1100)
 local p2 = NewPlayer("Juancito", kTeamReadyRoom, 1100)
 local other = NewPlayer("Watcher", kSpectatorIndex, 5000)
 Say(p1, "!joinq")
-check(Has(p1, "join pool (1 waiting)"), "joinq reply with count")
+check(Has(p1, "SUD Queue (1 waiting)"), "joinq reply with count")
 Run(1.5)
 check(SSM.JoinPool_GetProposal() == nil, "one player: no offer")
 Say(p2, "!joinq")
@@ -269,7 +269,7 @@ LockTeams.TeamLock = false
 Run(1.5)
 check(SSM.JoinPool_GetProposal() == nil, "unlocked: pending pair cancelled")
 check(#SSM.JoinPool_GetPool() == 2, "unlocked: pool kept")
-check(Has(p1, "join pool is paused") and Has(p2, "join pool is paused"), "unlocked: members told")
+check(Has(p1, "SUD Queue is paused") and Has(p2, "SUD Queue is paused"), "unlocked: members told")
 Run(5)
 local pausedLines = 0
 for _, text in ipairs(TextsTo(p1)) do if text:find("paused", 1, true) then pausedLines = pausedLines + 1 end end
@@ -402,12 +402,12 @@ check(LockTeams.TeamLock == true, "lock restored after a failure")
 -- !exitq, !listq, !readyq with nothing pending.
 Reset(); m, a = Teams(6)
 p1 = NewPlayer("Ana", kSpectatorIndex, 1000)
-Say(p1, "!listq"); check(Has(p1, "Nobody is in the join pool"), "listq empty")
-Say(p1, "!joinq"); Say(p1, "!listq"); check(Has(p1, "Join pool (1): Ana"), "listq names")
-Say(p1, "!joinq"); check(Has(p1, "already in the join pool"), "joinq twice")
+Say(p1, "!listq"); check(Has(p1, "Nobody is in the SUD Queue"), "listq empty")
+Say(p1, "!joinq"); Say(p1, "!listq"); check(Has(p1, "SUD Queue (1): Ana"), "listq names")
+Say(p1, "!joinq"); check(Has(p1, "already in the SUD Queue"), "joinq twice")
 check(Say(p1, "!readyq") == "" and Has(p1, "Nobody has asked you to type !readyq"), "readyq with nothing pending: private reply")
-Say(p1, "!exitq"); check(Has(p1, "You left the join pool") and #SSM.JoinPool_GetPool() == 0, "exitq")
-Say(p1, "!exitq"); check(Has(p1, "not in the join pool"), "exitq when not in")
+Say(p1, "!exitq"); check(Has(p1, "You left the SUD Queue") and #SSM.JoinPool_GetPool() == 0, "exitq")
+Say(p1, "!exitq"); check(Has(p1, "not in the SUD Queue"), "exitq when not in")
 
 -- Leaving during a proposal: the partner is told and stays.
 Reset(); m, a = Teams(6)
@@ -455,7 +455,7 @@ Reset(); m, a = Teams(6)
 local trusted = NewPlayer("Trusted", kSpectatorIndex, 1000)
 ShineUsers = { [trusted.client] = { Group = "TrustedPlayer" } }
 Hooks.Console_sud_joinpool(trusted.client, "off")
-check(Has(trusted, "switched the join pool off"), "Shine admin without explicit access switches it")
+check(Has(trusted, "switched the SUD Queue off"), "Shine admin without explicit access switches it")
 ShineUsers = {}
 
 -- Round-start wait (default 30 s): !joinq works at once, no pair before 30 s, then the best pair.
@@ -488,7 +488,7 @@ check(SSM.JoinPool_GetProposal() == nil and Has(p1, "Pairs are picked from"), "n
 Reset(); m, a = Teams(6)
 p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 Say(p1, "!lang es"); Say(p1, "!joinq")
-check(Has(p1, "Está en la cola para entrar"), "Spanish reply")
+check(Has(p1, "Está en la SUD Queue"), "Spanish reply")
 
 -- Plain !ready is not the join pool's (Shine's tournament mode uses it): left alone, even from a
 -- player with a pair waiting.
@@ -553,7 +553,7 @@ check(Files["SSM_JoinPool.json"].F4JoinsQueue == true, "config written with F4Jo
 p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 PressF4(p1, false)
 check(InPool(p1) and p1.team == kSpectatorIndex, "F4, mod's hook first: in the pool, still a spectator")
-check(Has(p1, "You are in the join pool"), "F4 gives the !joinq line")
+check(Has(p1, "You are in the SUD Queue"), "F4 gives the !joinq line")
 check(#Joins == 0, "the game's move to the ready room was refused")
 
 p2 = NewPlayer("P2", kSpectatorIndex, 1000)
@@ -630,6 +630,109 @@ p1 = NewPlayer("P1", kSpectatorIndex, 1000); p2 = NewPlayer("P2", kSpectatorInde
 PressF4(p1, false); PressF4(p2, true)
 Run(1.5)
 check(SSM.JoinPool_GetProposal() ~= nil, "two F4 joiners are offered as a pair")
+
+-- ---------------------------------------------------------------------------------------------
+-- Spectator hint (v1.5)
+
+local function Hints(player, pattern)
+    local count = 0
+    for _, text in ipairs(TextsTo(player)) do
+        if text:find(pattern or "Want to play?", 1, true) then count = count + 1 end
+    end
+    return count
+end
+
+-- The round goes live at Reset (time 0): first hint at 30 s, then every 60 s.
+Reset(); m, a = Teams(6)
+check(Files["SSM_JoinPool.json"].SpectatorHintStartSeconds == 30 and Files["SSM_JoinPool.json"].SpectatorHintEverySeconds == 60,
+    "config written with hint 30 s / 60 s")
+local spec = NewPlayer("Spec", kSpectatorIndex, 1000)
+local queued = NewPlayer("Queued", kSpectatorIndex, 1000)
+local roomer = NewPlayer("Roomer", kTeamReadyRoom, 1000)
+local bot = NewPlayer("Bot", kSpectatorIndex, 1000, 0, { virtual = true })
+Say(queued, "!joinq")
+Run(29.5)
+check(Hints(spec) == 0, "no hint before 30 s")
+Run(1)
+check(Hints(spec) == 1, "hint at 30 s")
+check(Has(spec, "Press F4 or type !joinq to join the SUD Queue"), "hint names F4 and !joinq")
+check(Hints(queued) == 0, "no hint to a spectator already queued")
+check(Hints(roomer) == 0 and Hints(m[1]) == 0, "no hint to the ready room or team players")
+check(Hints(bot) == 0, "no hint to bots")
+Run(59)
+check(Hints(spec) == 1, "no second hint before 90 s")
+Run(1)
+check(Hints(spec) == 2, "second hint at 90 s")
+Run(120)
+check(Hints(spec) == 4, "every 60 s after that")
+Say(queued, "!exitq"); Say(spec, "!joinq")   -- alone in the pool, so no pair is offered
+Run(60)
+check(Hints(spec) == 4, "no more hints once queued")
+
+-- A new round starts the count again.
+Reset(); m, a = Teams(6)
+spec = NewPlayer("Spec", kSpectatorIndex, 1000)
+Run(40)
+Started = false; Run(5); Started = true
+Run(25)
+check(Hints(spec) == 1, "new round: nothing before 30 s into it")
+Run(6)
+check(Hints(spec) == 2, "new round: hint 30 s into it")
+
+-- Skipped while the pool could not place anyone, and the schedule keeps going.
+local function NoHint(label, setup)
+    Reset(); m, a = Teams(6)
+    local p = NewPlayer("Spec", kSpectatorIndex, 1000)
+    setup(p)
+    Run(31)
+    check(Hints(p) == 0, label)
+    return p
+end
+NoHint("round not live: no hint", function() Started = false end)
+NoHint("teams unlocked: no hint", function() LockTeams.TeamLock = false end)
+NoHint("8v8: no hint", function() NewPlayer("M7", kTeam1Index, 1000); NewPlayer("A7", kTeam2Index, 1000)
+    NewPlayer("M8", kTeam1Index, 1000); NewPlayer("A8", kTeam2Index, 1000) end)
+NoHint("uneven teams: no hint", function() m[1].team = kSpectatorIndex end)
+NoHint("held body on a team: no hint", function() m[1].client.virtual = true end)
+NoHint("pool off this round: no hint", function()
+    local admin = NewPlayer("Admin", kTeamReadyRoom, 1000)
+    Admins[admin.client] = true
+    Hooks.Console_sud_joinpool(admin.client, "off")
+end)
+local unlockedSpec = NoHint("unlocked at 30 s: skipped", function() LockTeams.TeamLock = false end)
+LockTeams.TeamLock = true
+Run(58)
+check(Hints(unlockedSpec) == 0, "locked again: nothing until the next 60 s mark")
+Run(2)
+check(Hints(unlockedSpec) == 1, "locked again: hint at 90 s")
+
+-- Settings and language.
+local function Reload(config)
+    Files["SSM_JoinPool.json"] = config
+    Hooks = {}
+    SSM = nil
+    NS2Gamerules.JoinTeam = BaseJoinTeam
+    for _, file in ipairs(kSharedFiles) do dofile(file) end
+    dofile(kServerFile)
+    Hooks.UpdateServer()
+end
+Reset(); m, a = Teams(6)
+spec = NewPlayer("Spec", kSpectatorIndex, 1000)
+Reload({ OfferDelaySeconds = 0, SpectatorHintEverySeconds = 0 })
+Run(200)
+check(Hints(spec) == 0, "SpectatorHintEverySeconds 0: no hint")
+
+Reset(); m, a = Teams(6)
+spec = NewPlayer("Spec", kSpectatorIndex, 1000)
+Reload({ OfferDelaySeconds = 0, F4JoinsQueue = false })
+Run(31)
+check(Has(spec, "Type !joinq to join the SUD Queue") and not Has(spec, "F4"), "F4JoinsQueue false: hint without F4")
+
+Reset(); m, a = Teams(6)
+spec = NewPlayer("Spec", kSpectatorIndex, 1000)
+Say(spec, "!lang es")
+Run(31)
+check(Has(spec, "Para jugar: presione F4 o escriba !joinq"), "hint in Spanish")
 
 print(string.format("%d passed, %d failed", passes, failures))
 if failures > 0 then os.exit(1) end

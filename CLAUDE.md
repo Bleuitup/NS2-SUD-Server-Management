@@ -411,6 +411,17 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
   would take them (`TakesPlayer`: pool on, live, locked, on the bench), and they stay a spectator;
   already in: `joinpool_already_f4` (how to leave). Otherwise F4 is untouched. `F4JoinsQueue`
   (true). No `readyroomqueue` on the servers ("this plugin replaces it").
+- **Spectator hint** (author, 2026-11-26, v1.5): "Want to play? Press F4 or type !joinq to join the
+  SUD Queue and wait for a place." privately to every spectator not in the pool, from 30 s into a
+  live round and every 60 s after (`SpectatorHintStartSeconds`, `SpectatorHintEverySeconds`; 0 =
+  off). The author's reasoning: mid-round, people only become spectators by connecting, and may be
+  AFK or alt-tabbed, so it repeats. A due hint is skipped while `CurrentTeams()` is nil (unlocked,
+  8v8, uneven, held body), so nobody is told to queue for a game the pool would not fill; v1.6's
+  uneven fill will need to widen that. Without `F4JoinsQueue` it only names `!joinq`. Spanish has
+  no "¿" (avoided in case the chat font lacks it).
+- **Players see "SUD Queue"** (author, 2026-11-26, v1.5): every chat line, `!help` text and the
+  Workshop description call it the SUD Queue in all three languages, matching the scoreboard and the
+  flowchart. "Join pool" stays the code's and the docs' name.
 
 ### How it works
 
@@ -580,7 +591,7 @@ Parked or dropped (2026-11-16):
   a map change, not after a restart, Thunderdome, the off switch), the round-start line, pause and
   resume with their chat lines, the per-team limit and round reset, pause on disconnect, and the
   game-chat fallback without Shine. Not the frozen world itself.
-- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, the round-start wait, Spanish, F4 (both hook orders, already in, every case where F4 stays as usual, other mods' moves, stale marks, ready room and team players, F4 joiners paired). 117 checks.
+- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, the round-start wait, Spanish, F4 (both hook orders, already in, every case where F4 stays as usual, other mods' moves, stale marks, ready room and team players, F4 joiners paired), the spectator hint (timing, who gets it, a new round, skipped while the pool cannot place anyone, the settings, Spanish). 142 checks.
 - `lua test/savedplayers.lua`: who is kept, the held slot, Lockteams, taking over by joining
   (gear stays, name and stats follow the person), reconnecting straight back in with Spectator On
   Connect leaving them alone, `sud_swap` (access, commander rule, names, swap back with stats),
@@ -611,6 +622,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, commanders not kept in public games, version name assumed 2026-11-26). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, version name assumed 2026-11-26). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

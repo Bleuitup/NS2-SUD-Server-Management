@@ -224,6 +224,13 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
   presses F4 joins the pool and stays a spectator, instead of going to the ready room. Pressed again,
   it says how to leave. Any other time F4 works as usual, and moves to the ready room by an admin or
   another mod are never touched.
+- **Spectators are reminded** (v1.5): from 30 seconds into a live round and every 60 seconds after,
+  spectators who are not in the pool get a private line: "Want to play? Press F4 or type !joinq to
+  join the SUD Queue and wait for a place." Mid-round the only new spectators are people who just
+  connected and may be away from the keyboard, hence the repeat. Only while the pool could place
+  someone (locked, even 6v6 or 7v7, nobody held).
+- Players see it as the **SUD Queue** in chat (since v1.5) and on the scoreboard, in all three
+  languages; "join pool" is only this document's and the code's name for it.
 - When two players in the pool can join, one per team, and keep the difference between the team
   averages within 75 elo, everyone else sees who they are and the difference now and after, and
   the two are asked privately to type **`!readyq`** within 30 seconds. Their game window flashes on
@@ -263,7 +270,9 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 | `ReadySeconds` | `30` | time the pair has to type `!readyq` |
 | `OfferDelaySeconds` | `30` | no pair is offered before this many seconds into the round, so the best pair of everyone who asked is picked, not the first two |
 | `TeamSizes` | `[6, 7]` | team sizes (per team, both equal) the pool runs at |
-| `F4JoinsQueue` | `true` | `false`: F4 always works as usual |
+| `F4JoinsQueue` | `true` | `false`: F4 always works as usual (the spectator reminder then only mentions `!joinq`) |
+| `SpectatorHintStartSeconds` | `30` | seconds into a live round before the first spectator reminder |
+| `SpectatorHintEverySeconds` | `60` | seconds between reminders; `0` switches them off |
 
 ## All talk
 
