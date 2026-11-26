@@ -31,6 +31,10 @@
 --     could not spawn. The original gets the resources back when they rejoin, as in the game.
 --   * A held body has its own scoreboard entry, "[D/C] Name" (v1.3c); a takeover swaps it for
 --     the person's.
+--   * A commander is only kept where the game can pause (Thunderdome, passworded) (v1.5, author
+--     2026-11-26). Elsewhere a held commander blocks the chair or hive with nobody to pause the
+--     game, so the game removes them as usual and someone else can take command at once. Whatever
+--     they had is lost. KeepCommandersInPublicGames (false) keeps them everywhere.
 --
 -- Left out of the port: NSL's referee list command and its bot-controller and virtual-move hooks,
 -- which build 345 no longer needs (a placeholder has no bot attached, so vanilla gives it an empty
@@ -38,11 +42,17 @@
 -- client's scoreboard entry.
 
 local kSettingsFile = "SSM_SavedPlayers.json"
-local kDefaultSettings = { Enabled = true }   -- false: disconnecting players are not kept
+local kDefaultSettings = {
+    Enabled = true,                       -- false: disconnecting players are not kept
+    KeepCommandersInPublicGames = false   -- true: commanders are kept where the game cannot pause
+}
 
 local settings = LoadConfigFile(kSettingsFile, kDefaultSettings, true)
 if type(settings) ~= "table" or type(settings.Enabled) ~= "boolean" then
     settings = { Enabled = true }
+end
+if type(settings.KeepCommandersInPublicGames) ~= "boolean" then
+    settings.KeepCommandersInPublicGames = false
 end
 
 local unpack = table.unpack or unpack
@@ -169,6 +179,14 @@ local function StoreDisconnectedTeamPlayer(gamerules, client)
         if SSMPause_TriggerDisconnectPause then
             SSMPause_TriggerDisconnectPause(name, teamNumber)
         end
+        return
+    end
+
+    -- A commander is only kept where the game can pause (v1.5, author 2026-11-26): in a public
+    -- game a held commander would block the chair or hive for good. The game removes them as usual.
+    if player:isa("Commander") and not settings.KeepCommandersInPublicGames
+        and not (SSMPause_GetAllowedReason and SSMPause_GetAllowedReason()) then
+        Log(string.format("not kept %s (commander, %s)", name, kTeamNames[teamNumber]))
         return
     end
 

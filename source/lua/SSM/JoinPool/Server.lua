@@ -36,6 +36,10 @@
 --     there; an admin's sud_joinpool on turns it on for the round.
 --   * Commands: !joinq, !exitq, !listq, !readyq; sud_joinpool on|off for admins (this round only).
 --   * The scoreboard shows "SUD Queue" in the status column of queued players (client part).
+--   * F4 (v1.5, author 2026-11-26): a spectator pressing F4 (the game's ready room key) while
+--     !joinq would take them joins the pool exactly as with !joinq and stays a spectator. Any
+--     other time F4 works as usual. F4JoinsQueue (true) switches it off. The servers do not run
+--     Shine-Epsilon's readyroomqueue, which uses the same key for player slots.
 
 local kConfigFile = "SSM_JoinPool.json"
 local kDefaultConfig = {
@@ -47,7 +51,9 @@ local kDefaultConfig = {
     -- No pair is offered before this many seconds into the round, so the first two to type !joinq
     -- do not get in just for being first; the best pair of everyone who asked is picked then.
     OfferDelaySeconds = 30,
-    TeamSizes = { 6, 7 }
+    TeamSizes = { 6, 7 },
+    -- A spectator's F4 joins the pool when !joinq would (false: F4 always works as usual).
+    F4JoinsQueue = true
 }
 -- How often the pool is looked at, and how often the queued list is re-sent to every client
 -- (so players who connect later get it too).
@@ -689,10 +695,20 @@ end)
 
 -- Commands ----------------------------------------------------------------------------------
 
-SSM.AddChatCommand("joinq", function(client)
+-- Whether !joinq would put this player in the pool (or tell them they are already in it).
+local function TakesPlayer(player)
+    return OffReason() == nil and IsLive() and IsBench(player:GetTeamNumber()) and LockState() == "locked"
+end
+
+-- !joinq, and F4 (viaF4: the "already in" line says how to leave).
+local function JoinPoolRequest(client, viaF4)
     local steamId = SteamIdOf(client)
     local player = client and client:GetControllingPlayer()
     if not (steamId and player) then
+        return
+    end
+    if viaF4 and PoolIndex(steamId) then
+        Say(client, "joinpool_already_f4", #Pool)
         return
     end
     local offReason = OffReason()
@@ -719,8 +735,91 @@ SSM.AddChatCommand("joinq", function(client)
             Say(client, "joinpool_wait_start", Config.OfferDelaySeconds, math.ceil(left))
         end
     end
-end)
+end
+SSM.AddChatCommand("joinq", function(client) JoinPoolRequest(client, false) end)
 SSM.ListCommand("!joinq", "cmd_joinq")
+
+-- F4 ------------------------------------------------------------------------------------------
+
+-- F4 runs the game's "rr" console command ("readyroom" typed by hand does the same), whose
+-- handler is private: it moves anyone who is not already in the ready room there with an
+-- unforced JoinTeam. This file hooks the same two commands. The engine's order between the
+-- game's handler and this one is not known, so both are handled:
+--   * this hook first: the player is queued and marked, and the game's move that follows is
+--     refused (they stay a spectator);
+--   * the game's first: the move went through and was noted; this hook moves the player back to
+--     spectator (forced, as Spectator On Connect does) and queues them.
+-- Both happen within one command, so a mark or a note older than kF4Window is stale. Moves to the
+-- ready room from other code (an admin's, another mod's) carry no mark and are never undone.
+local kF4Window = 0.1
+local f4Marks = {}         -- [client] = time: refuse this client's next unforced move to the ready room
+local movedToReadyRoom = {}   -- [client] = time: last unforced move from spectator to the ready room
+
+local function F4Applies(player)
+    return Config.F4JoinsQueue == true and player ~= nil and TakesPlayer(player)
+end
+
+local oldJoinTeam
+oldJoinTeam = Class_ReplaceMethod("NS2Gamerules", "JoinTeam", function(self, player, newTeamNumber, force, ...)
+    if newTeamNumber ~= kTeamReadyRoom or force or not player or player:GetTeamNumber() ~= kSpectatorIndex then
+        return oldJoinTeam(self, player, newTeamNumber, force, ...)
+    end
+    local client = Server.GetOwner(player)
+    local now = Shared.GetTime()
+    local mark = client and f4Marks[client]
+    if mark then
+        f4Marks[client] = nil
+        if now - mark <= kF4Window then
+            return false
+        end
+    end
+    local result = { oldJoinTeam(self, player, newTeamNumber, force, ...) }
+    if client and result[1] then
+        movedToReadyRoom[client] = now
+    end
+    return (table.unpack or unpack)(result)
+end)
+
+local function OnReadyRoomCommand(client)
+    local ok, err = pcall(function()
+        local player = client and client:GetControllingPlayer()
+        local now = Shared.GetTime()
+        local movedAt = client and movedToReadyRoom[client]
+        if client then
+            movedToReadyRoom[client] = nil
+        end
+        if not player then
+            return
+        end
+        local team = player:GetTeamNumber()
+        if team == kSpectatorIndex then
+            -- This hook runs first.
+            if F4Applies(player) then
+                f4Marks[client] = now
+                JoinPoolRequest(client, true)
+            end
+        elseif team == kTeamReadyRoom and movedAt and now - movedAt <= kF4Window then
+            -- The game's ran first and moved a spectator to the ready room: put them back.
+            local gamerules = GetGamerules()
+            if gamerules and Config.F4JoinsQueue == true and OffReason() == nil and IsLive()
+                and LockState() == "locked" then
+                gamerules:JoinTeam(player, kSpectatorIndex, true)
+                JoinPoolRequest(client, true)
+            end
+        end
+    end)
+    if not ok then
+        Log("F4 error: " .. tostring(err))
+    end
+end
+Event.Hook("Console_rr", OnReadyRoomCommand)
+Event.Hook("Console_readyroom", OnReadyRoomCommand)
+
+-- Clients that leave take their marks with them.
+Event.Hook("ClientDisconnect", function(client)
+    f4Marks[client] = nil
+    movedToReadyRoom[client] = nil
+end)
 
 SSM.AddChatCommand("exitq", function(client)
     local steamId = SteamIdOf(client)

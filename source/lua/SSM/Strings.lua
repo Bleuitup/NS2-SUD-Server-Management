@@ -149,9 +149,9 @@ en.team_aliens = "Aliens"
 es.team_aliens = "Aliens"
 pt.team_aliens = "Aliens"
 
-en.cmd_joinq = "Wait in the join pool during a live 6v6 or 7v7 with the teams locked (spectators and ready room)"
-es.cmd_joinq = "Esperar en la cola para entrar durante una partida 6v6 o 7v7 en curso con los equipos bloqueados (espectadores y sala de espera)"
-pt.cmd_joinq = "Esperar na fila para entrar durante uma partida 6v6 ou 7v7 em andamento com os times travados (espectadores e sala de espera)"
+en.cmd_joinq = "Wait in the join pool during a live 6v6 or 7v7 with the teams locked (spectators and ready room). As a spectator, F4 does the same"
+es.cmd_joinq = "Esperar en la cola para entrar durante una partida 6v6 o 7v7 en curso con los equipos bloqueados (espectadores y sala de espera). Como espectador, F4 hace lo mismo"
+pt.cmd_joinq = "Esperar na fila para entrar durante uma partida 6v6 ou 7v7 em andamento com os times travados (espectadores e sala de espera). Como espectador, F4 faz o mesmo"
 
 en.cmd_exitq = "Leave the join pool"
 es.cmd_exitq = "Salir de la cola para entrar"
@@ -204,6 +204,10 @@ pt.joinpool_relocked = "Os times foram travados de novo, então a fila para entr
 en.joinpool_already ="You are already in the join pool (%d waiting)."
 es.joinpool_already = "Ya está en la cola para entrar (%d esperando)."
 pt.joinpool_already = "Você já está na fila para entrar (%d esperando)."
+
+en.joinpool_already_f4 = "You are already in the join pool (%d waiting). Type !exitq to leave it."
+es.joinpool_already_f4 = "Ya está en la cola para entrar (%d esperando). Escriba !exitq para salir."
+pt.joinpool_already_f4 = "Você já está na fila para entrar (%d esperando). Digite !exitq para sair."
 
 en.joinpool_added = "You are in the join pool (%d waiting). When you and another player can join and keep the teams within %d elo, you will be asked to type !readyq."
 es.joinpool_added = "Está en la cola para entrar (%d esperando). Cuando haya otro jugador con quien entrar manteniendo los equipos a menos de %d de elo, se pedirá escribir !readyq."

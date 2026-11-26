@@ -128,16 +128,18 @@ local Gamerules = {
     GetTeam = function(_, number)
         return { ForEachPlayer = function(_, fn) for _, p in ipairs(OnTeam(number)) do fn(p) end end }
     end,
-    JoinTeam = function(self, player, team, force)
-        Joins[#Joins + 1] = { name = player.name, team = team, force = force }
-        LockDuringJoin[#LockDuringJoin + 1] = LockTeams.TeamLock
-        if self.failJoinTeam == team then return false end
-        player.team = team
-        return true, player
-    end
+    -- Through NS2Gamerules, so the mod's JoinTeam wrap (F4) sees every move, as in the game.
+    JoinTeam = function(self, ...) return NS2Gamerules.JoinTeam(self, ...) end
 }
+local function BaseJoinTeam(self, player, team, force)
+    Joins[#Joins + 1] = { name = player.name, team = team, force = force }
+    LockDuringJoin[#LockDuringJoin + 1] = LockTeams.TeamLock
+    if self.failJoinTeam == team then return false end
+    player.team = team
+    return true, player
+end
 function GetGamerules() return Gamerules end
-NS2Gamerules = { ResetGame = function() end }
+NS2Gamerules = { ResetGame = function() end, JoinTeam = BaseJoinTeam }
 
 local function Say(player, text)
     return ChatHook(player.client, { message = text })
@@ -162,6 +164,7 @@ local function Reset(defaults)
     LockTeams.TeamLock = true
     Gamerules.failJoinTeam = nil
     SSM = nil
+    NS2Gamerules.JoinTeam = BaseJoinTeam
     for _, file in ipairs(kSharedFiles) do dofile(file) end
     dofile(kServerFile)
     Hooks.UpdateServer()   -- installs the chat hook
@@ -518,6 +521,115 @@ p1 = NewPlayer("P1", kSpectatorIndex, 1000)
 Say(p1, "!joinq")
 check(#SSM.JoinPool_GetPool() == 1, "Thunderdome: EnabledOnThunderdome true turns it on")
 Shared.GetThunderdomeEnabled = nil
+
+-- ---------------------------------------------------------------------------------------------
+-- F4 (v1.5)
+
+-- The game's private "rr" handler: anyone not in the ready room goes there, unforced.
+local function GameReadyRoom(player)
+    if player.team ~= kTeamReadyRoom then
+        return Gamerules:JoinTeam(player, kTeamReadyRoom)
+    end
+end
+-- F4, with the engine calling this mod's hook before or after the game's handler.
+local function PressF4(player, gameFirst)
+    if gameFirst then
+        GameReadyRoom(player)
+        Hooks.Console_rr(player.client)
+    else
+        Hooks.Console_rr(player.client)
+        GameReadyRoom(player)
+    end
+end
+local function InPool(player)
+    for _, entry in ipairs(SSM.JoinPool_GetPool()) do
+        if entry.steamId == player.client.steamId then return true end
+    end
+    return false
+end
+
+Reset(); m, a = Teams(6)
+check(Files["SSM_JoinPool.json"].F4JoinsQueue == true, "config written with F4JoinsQueue true")
+p1 = NewPlayer("P1", kSpectatorIndex, 1000)
+PressF4(p1, false)
+check(InPool(p1) and p1.team == kSpectatorIndex, "F4, mod's hook first: in the pool, still a spectator")
+check(Has(p1, "You are in the join pool"), "F4 gives the !joinq line")
+check(#Joins == 0, "the game's move to the ready room was refused")
+
+p2 = NewPlayer("P2", kSpectatorIndex, 1000)
+PressF4(p2, true)
+check(InPool(p2) and p2.team == kSpectatorIndex, "F4, game's handler first: moved back, in the pool")
+check(Joins[#Joins].team == kSpectatorIndex and Joins[#Joins].force == true, "moved back with a forced join")
+
+Notified = {}
+PressF4(p1, false)
+check(Has(p1, "Type !exitq to leave it") and #SSM.JoinPool_GetPool() == 2 and p1.team == kSpectatorIndex,
+    "F4 when already in: told how to leave, nothing changes")
+Notified = {}
+PressF4(p2, true)
+check(Has(p2, "Type !exitq to leave it") and p2.team == kSpectatorIndex, "same with the game's handler first")
+
+-- The pool does not take players: F4 works as usual, both orders.
+local function UsualF4(label, setup, teardown)
+    for _, gameFirst in ipairs({ false, true }) do
+        Reset(); m, a = Teams(6)
+        setup()
+        local p = NewPlayer("P", kSpectatorIndex, 1000)
+        PressF4(p, gameFirst)
+        check(p.team == kTeamReadyRoom and not InPool(p), label .. (gameFirst and " (game first)" or " (mod first)"))
+        if teardown then teardown() end
+    end
+end
+UsualF4("teams unlocked: F4 goes to the ready room", function() LockTeams.TeamLock = false end)
+UsualF4("round not live: F4 goes to the ready room", function() Started = false end)
+UsualF4("pool off this round: F4 goes to the ready room", function()
+    local admin = NewPlayer("Admin", kSpectatorIndex, 1000)
+    Admins[admin.client] = true
+    Hooks.Console_sud_joinpool(admin.client, "off")
+end)
+UsualF4("Lockteams missing: F4 goes to the ready room",
+    function() LockTeams.Enabled = false end, function() LockTeams.Enabled = true end)
+UsualF4("F4JoinsQueue false: F4 goes to the ready room", function()
+    Files["SSM_JoinPool.json"] = { OfferDelaySeconds = 0, F4JoinsQueue = false }
+    SSM = nil
+    NS2Gamerules.JoinTeam = BaseJoinTeam
+    for _, file in ipairs(kSharedFiles) do dofile(file) end
+    dofile(kServerFile)
+    Hooks.UpdateServer()
+end)
+
+-- Moves to the ready room that are not the player's own F4 are left alone.
+Reset(); m, a = Teams(6)
+p1 = NewPlayer("P1", kSpectatorIndex, 1000)
+Gamerules:JoinTeam(p1, kTeamReadyRoom)
+check(p1.team == kTeamReadyRoom, "another mod's unforced move to the ready room goes through")
+Now = Now + 1
+Hooks.Console_rr(p1.client)
+check(p1.team == kTeamReadyRoom and not InPool(p1), "a later F4 in the ready room does not undo it")
+
+-- A mark the game's handler never used (it refused, as on Thunderdome) does not block later moves.
+p2 = NewPlayer("P2", kSpectatorIndex, 1000)
+Hooks.Console_rr(p2.client)
+check(InPool(p2) and p2.team == kSpectatorIndex, "mod's hook alone: queued")
+Now = Now + 1
+Gamerules:JoinTeam(p2, kTeamReadyRoom)
+check(p2.team == kTeamReadyRoom, "a stale mark does not block a later move")
+
+-- Ready room players: F4 does nothing there (the game leaves them), and they are not queued.
+p3 = NewPlayer("P3", kTeamReadyRoom, 1000)
+PressF4(p3, false); PressF4(p3, true)
+check(p3.team == kTeamReadyRoom and not InPool(p3), "F4 in the ready room: nothing")
+
+-- Players on a team: F4 takes them to the ready room as usual.
+PressF4(m[1], false)
+check(m[1].team == kTeamReadyRoom and not InPool(m[1]), "F4 on a team: to the ready room, not queued")
+
+-- F4 joiners are paired like anyone else.
+Reset(); m, a = Teams(6)
+p1 = NewPlayer("P1", kSpectatorIndex, 1000); p2 = NewPlayer("P2", kSpectatorIndex, 1000)
+PressF4(p1, false); PressF4(p2, true)
+Run(1.5)
+check(SSM.JoinPool_GetProposal() ~= nil, "two F4 joiners are offered as a pair")
 
 print(string.format("%d passed, %d failed", passes, failures))
 if failures > 0 then os.exit(1) end

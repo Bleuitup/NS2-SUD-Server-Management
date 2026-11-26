@@ -498,6 +498,56 @@ check(joined and miaPlayer ~= raceBody and miaPlayer.team == 2 and miaPlayer.nam
 check(not SSM.SavedPlayers_IsHeld(3) and Body("[D/C] Juan") == nil and TeamCount(2) == 2, "the dead body is let go")
 
 -- ---------------------------------------------------------------------------------------------
+-- Commanders (v1.5)
+
+-- Room for Leo on top of whoever is still around from the tests above.
+local savedMaxPlayers = MaxPlayers
+MaxPlayers = 16
+
+-- Public game (the pause is not allowed): a commander who disconnects is not kept.
+local leo = Connect(7, "Leo")
+check(Join(leo, 1), "Leo joins the Marines")
+leo.player.commander = true
+local before = TeamCount(1)
+Disconnect(leo)
+check(not SSM.SavedPlayers_IsHeld(7) and Body("[D/C] Leo") == nil, "public game: a commander is not kept")
+check(TeamCount(1) == before - 1, "the chair is free: nothing left on the team")
+
+-- Where the game can pause: kept as before.
+SSMPause_GetAllowedReason = function() return "password" end
+leo = Connect(7, "Leo")
+Join(leo, 1)
+leo.player.commander = true
+Disconnect(leo)
+check(SSM.SavedPlayers_IsHeld(7), "passworded game: the commander is kept")
+Gamerules:ResetGame()
+SSMPause_GetAllowedReason = nil
+
+-- Not a commander: kept in a public game, as before.
+leo = Connect(7, "Leo")
+Join(leo, 1)
+Disconnect(leo)
+check(SSM.SavedPlayers_IsHeld(7), "public game: a field player is still kept")
+Gamerules:ResetGame()
+
+-- KeepCommandersInPublicGames: kept everywhere.
+check(Files["SSM_SavedPlayers.json"] == nil or Files["SSM_SavedPlayers.json"].KeepCommandersInPublicGames ~= true,
+    "commanders are not kept in public games by default")
+Files["SSM_SavedPlayers.json"] = { Enabled = true, KeepCommandersInPublicGames = true }
+LoadServer()
+Gamerules.state = kGameState.Started
+leo = Connect(7, "Leo")
+Join(leo, 1)
+leo.player.commander = true
+Disconnect(leo)
+check(SSM.SavedPlayers_IsHeld(7), "KeepCommandersInPublicGames true: the commander is kept")
+Gamerules:ResetGame()
+Files["SSM_SavedPlayers.json"] = nil
+LoadServer()
+Gamerules.state = kGameState.Started
+MaxPlayers = savedMaxPlayers
+
+-- ---------------------------------------------------------------------------------------------
 -- Round reset
 
 local anaBody = ana.player

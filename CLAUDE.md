@@ -279,6 +279,12 @@ one client fix (below).
   dead held body (`ReleaseHeld`: writes the body's pres into `gamerules.clientpres[id][team]`,
   which vanilla `JoinTeam` gives back, clears `isCached`, disconnects the placeholder). A takeover
   that finds the body dead becomes a normal join.
+- **Commanders only kept where the game can pause** (author, 2026-11-26, v1.5):
+  `SSMPause_GetAllowedReason()` (Thunderdome or passworded, with the pause enabled). In a public
+  game a held commander blocks the chair or hive with no pause to wait in, so
+  `StoreDisconnectedTeamPlayer` returns before keeping them and the game's own disconnect removes
+  them ("whatever they had is lost": author, "yes, absolutely"). `KeepCommandersInPublicGames`
+  (false) keeps them everywhere. Untested in game: that the chair or hive frees at once.
 - **Scoreboard entry** (v1.3c): vanilla `Gamerules:OnClientDisconnect` compares
   `playerInfo.clientIndex`, a field `PlayerInfoEntity` never sets, so it never destroys anything;
   an entry goes when its player is destroyed (`Player:OnDestroy`) or is gone (`UpdateScore`). So
@@ -401,6 +407,10 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 - **Scoreboard:** queued players show `SUD Queue` in the status column of the spectator / ready
   room block (author's label). **Taskbar:** the pair's game window flashes
   (`Client.WindowNeedsAttention`, the call the game uses when a round starts).
+- **F4** (author, 2026-11-26, v1.5): a spectator's F4 does what `!joinq` does whenever `!joinq`
+  would take them (`TakesPlayer`: pool on, live, locked, on the bench), and they stay a spectator;
+  already in: `joinpool_already_f4` (how to leave). Otherwise F4 is untouched. `F4JoinsQueue`
+  (true). No `readyroomqueue` on the servers ("this plugin replaces it").
 
 ### How it works
 
@@ -411,6 +421,14 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
   Client ids are `client:GetId()`, which is what the scoreboard's `ClientIndex` holds.
 - `JoinPool/Client.lua` wraps `GUIScoreboard:UpdateTeam` on the first client update after the
   class exists, after the original has drawn the row, in a `pcall`.
+- **F4:** the key runs the game's `rr` console command (`readyroom` too), whose handler is a
+  private local in `NS2ConsoleCommands_Server.lua` that calls an unforced
+  `JoinTeam(player, kTeamReadyRoom)` and tail-calls it (so no stack check). SSM hooks
+  `Console_rr` and `Console_readyroom` and wraps `NS2Gamerules:JoinTeam`; the engine's order
+  between the two handlers is unknown, so both are handled: SSM first marks the client and the
+  game's move is refused; the game first is noted by the wrap (`movedToReadyRoom`) and undone
+  (forced `JoinTeam` to spectator, as Spectator On Connect does). Marks and notes are only valid
+  for 0.1 s (`kF4Window`), so moves from other code are never refused or undone.
 - **New client files and network messages:** server and clients must run the same mod version.
   Publish before the server runs it.
 
@@ -418,6 +436,8 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 
 - The scoreboard label and the flash; `!readyq` (v1.3c); the two joiners' respawn; Lockteams' own join-spam counter
   not firing on these joins.
+- F4 (v1.5): which hook order the engine uses (both are handled), and that a spectator moved back
+  after the game's handler ran first looks and spectates normally.
 
 ## Feature: All Talk (`AllTalk/Server.lua`; v1.4, released 2026-11-26)
 
@@ -516,6 +536,30 @@ Parked or dropped (2026-11-16):
 
 ## Planned (author's ideas, not built yet)
 
+- **Join Pool: F4, uneven fills, `!swapq` (agreed 2026-11-26, planned v1.5 then v1.6).**
+  Player-facing flowchart: Artifact "SUD Queue" (https://claude.ai/artifact/JaALukeggEjKynU6UheHNk).
+  Everything only while Lockteams is locked; unlocked = anyone can join ("all bets are off").
+  - **F4 (v1.5, built on `feat/f4-queue`):** a spectator's own F4 (`rr`) while the pool runs = `!joinq`; stays spectator;
+    already queued: told `!exitq` leaves. Other moves to the ready room untouched. No
+    `readyroomqueue` on the servers (Join Pool replaces it). `F4JoinsQueue` (true).
+  - **Commander crash (v1.5, built on `feat/f4-queue`):** in public games (no pause) a disconnecting commander is not kept,
+    so the chair/hive frees at once; they lose what they had (author: "absolutely"). Where the
+    pause runs (Thunderdome, passworded) kept as now - assumed, confirm.
+  - **Uneven fill (v1.6):** teams short in people (held [D/C] = missing) for `UnevenDelaySeconds`
+    (5), any sizes, one at a time. Queue empty: bench told "press F4 or type !joinq" (always say
+    F4). Else everyone queued gets `UnevenReadySeconds` (20) to `!readyq`, together; late
+    queuers asked too. Nobody: admins told, bench reminded. Else pick = smallest elo gap after
+    joining (no 75 limit; held body's owner out of the average); others told they stay queued.
+    Admin online: admins get "Teams are 6v5. 2 players in SUD Queue. Pepito is the closest ready
+    elo match and would take over [D/C] Juan's Fade. Team elo gap after joining: +60 Aliens. Type
+    !okq to fill Aliens." `!okq` (Shine admins, as `sud_joinpool`) re-checks, next-best if the
+    pick is gone. No admin online: the pick joins on their own. Join = lock lifted, normal join;
+    Saved Players' takeover hands over a held body (admins accept that with `!okq`). Offer ends
+    on even teams, unlock, round end, pick leaving.
+  - **`!swapq` (v1.6):** the player the joiner replaced (body owner, else the most recent to
+    leave that team) types it from the bench: swap when the joiner next dies (default) or at once
+    (`SwapBackImmediately`, false; `SwapPeople`). The joiner goes back into the pool (no order:
+    the pick is by elo). Joiner already gone and team short: straight back in.
 - Reminder messages so players learn the commands (now there is `!help` to point them to).
 
 ## Testing
@@ -536,12 +580,13 @@ Parked or dropped (2026-11-16):
   a map change, not after a restart, Thunderdome, the off switch), the round-start line, pause and
   resume with their chat lines, the per-team limit and round reset, pause on disconnect, and the
   game-chat fallback without Shine. Not the frozen world itself.
-- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, the round-start wait, Spanish. 86 checks.
+- `lua test/joinpool.lua`: who is offered (sizes, held bodies, slots, limit and the far-apart rule), the gap maths with side offsets and commander skill, best pair and way round, the lines and the flash, `!ready`, the Lockteams requirement (missing, disabled, open), unlock mid-round (kept, paused, told once, pending pair cancelled) and re-lock, the Lockteams lift and restore, normal joins, the half-done undo, expiry, cancel on changed teams, the commands, round end, AFK shield, the admin switch, the round-start wait, Spanish, F4 (both hook orders, already in, every case where F4 stays as usual, other mods' moves, stale marks, ready room and team players, F4 joiners paired). 117 checks.
 - `lua test/savedplayers.lua`: who is kept, the held slot, Lockteams, taking over by joining
   (gear stays, name and stats follow the person), reconnecting straight back in with Spectator On
   Connect leaving them alone, `sud_swap` (access, commander rule, names, swap back with stats),
   round reset, the off switch, dead players not kept and a held body that dies let go with its
-  pres kept (v1.3c), one scoreboard entry per body and none left over. Not the engine hand-over
+  pres kept (v1.3c), one scoreboard entry per body and none left over, commanders only kept where
+  the pause is allowed or with `KeepCommandersInPublicGames` (v1.5). 71 checks. Not the engine hand-over
   itself.
 - `lua test/alltalk.lua`: on at map load and round end, Shine's line only when it changes, not
   saved, never turned off, an admin's off kept until the round ends, the plugin enabling late or
@@ -566,6 +611,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, commanders not kept in public games, version name assumed 2026-11-26). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

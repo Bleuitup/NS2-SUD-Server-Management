@@ -200,6 +200,10 @@ On every server, ported from Dragon's NSL Mod.
   use that slot is to take the body over. Lockteams still blocks joining; `sud_swap` works on
   locked teams.
 - Bodies nobody took are removed when the round resets.
+- **A commander is only kept where the game can pause** (Thunderdome and passworded games, v1.5).
+  In a public game a kept commander would block the chair or hive with no pause to wait in, so the
+  game removes them as usual and someone else can take command right away. Whatever they had is
+  lost.
 
 ### Server settings
 
@@ -208,6 +212,7 @@ On every server, ported from Dragon's NSL Mod.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | `false`: disconnecting players are not kept (`sud_swap` still swaps players) |
+| `KeepCommandersInPublicGames` | `false` | `true`: commanders are kept in public games too |
 
 ## Join pool
 
@@ -215,6 +220,10 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 
 - **`!joinq`** (spectators and the ready room, live rounds only) puts a player in the join pool.
   The scoreboard shows them as `SUD Queue`. `!exitq` leaves it, `!listq` lists who is in it.
+- **F4 from spectator does the same** (v1.5): whenever `!joinq` would take them, a spectator who
+  presses F4 joins the pool and stays a spectator, instead of going to the ready room. Pressed again,
+  it says how to leave. Any other time F4 works as usual, and moves to the ready room by an admin or
+  another mod are never touched.
 - When two players in the pool can join, one per team, and keep the difference between the team
   averages within 75 elo, everyone else sees who they are and the difference now and after, and
   the two are asked privately to type **`!readyq`** within 30 seconds. Their game window flashes on
@@ -254,6 +263,7 @@ During a live 6v6 or 7v7 round, players waiting to get in no longer need an admi
 | `ReadySeconds` | `30` | time the pair has to type `!readyq` |
 | `OfferDelaySeconds` | `30` | no pair is offered before this many seconds into the round, so the best pair of everyone who asked is picked, not the first two |
 | `TeamSizes` | `[6, 7]` | team sizes (per team, both equal) the pool runs at |
+| `F4JoinsQueue` | `true` | `false`: F4 always works as usual |
 
 ## All talk
 
