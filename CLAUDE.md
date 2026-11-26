@@ -419,7 +419,7 @@ reset to GitHub's on 2026-11-21 at the author's request; Lockteams' `release/2.2
 - The scoreboard label and the flash; `!readyq` (v1.3c); the two joiners' respawn; Lockteams' own join-spam counter
   not firing on these joins.
 
-## Feature: All Talk (`AllTalk/Server.lua`; branch `feat/alltalk`, 2026-11-25, planned as v1.4)
+## Feature: All Talk (`AllTalk/Server.lua`; v1.4, released 2026-11-26)
 
 Turns on Shine's all talk between rounds.
 
@@ -445,6 +445,10 @@ Turns on Shine's all talk between rounds.
 
 ## Open threads (remind the author)
 
+- **v1.4 published and tagged 2026-11-26** (merged into `main`; the Workshop description has the
+  All talk section): All Talk on at round end and map load. To see in game: Shine's line, that it
+  comes back on after a map change, and that the 8v8 and 6v6 Shine configs have `basecommands`
+  enabled.
 - **v1.3c published and tagged 2026-11-22** (`cd2cd59`, merged into `main`; Workshop updated
   5 min after the commit with the new description line; Launch Pad again only rewrote
   `mod.settings` line endings): Join Pool's `!readyq`; Saved Players keeps only living players
@@ -498,6 +502,17 @@ Parked or dropped (2026-11-16):
   minutes as a session total.
 - **Extra badge - dropped.** (It was a Shine badge-config change, not a mod: badges without a
   column land in column 5.)
+- **Player filter - shelved (2026-11-26).** The author's goal: only let play people who listen to
+  calls, keeping out low-tier first-timers ("turbo green rookies"). Findings: the server has each
+  player's Hive data shortly after connect (rookie flag = level < 10, level, skill, tier via
+  `GetPlayerSkillTier`, adagrad; -1 until loaded); SSM could keep its own first-seen list of
+  Steam IDs from the day it starts. Country: by IP needs a third-party GeoIP service (sends IPs
+  out) or a bundled database; the Steam profile country needs `steam_web_api_key`, public
+  profiles only, often empty; ping (Shine pingtracker) is a better region proxy. NS2 Panel has
+  no API (HTML only, scraping needs the owner's OK) and its skill is Hive's anyway. "Listens to
+  calls" can't be measured; options were a rookie/level/skill gate (stay spectator, chat line),
+  first-visit probation for N rounds, an admin vouch list, or a mix. No vanilla veterans-only
+  browser tag. UWE rules on restricting rookies not checked; raise with Ghoul (whitelisted mod).
 
 ## Planned (author's ideas, not built yet)
 
@@ -551,6 +566,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, version name assumed 2026-11-25). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.
