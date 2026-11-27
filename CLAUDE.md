@@ -578,6 +578,8 @@ Parked or dropped (2026-11-16):
     leave that team) types it from the bench: swap when the joiner next dies (default) or at once
     (`SwapBackImmediately`, false; `SwapPeople`). The joiner goes back into the pool (no order:
     the pick is by elo). Joiner already gone and team short: straight back in.
+- **Skill requirement (planned v1.6, not built).** Plan in `private/region-rule.md`, kept out of
+  git on purpose: never put its details (country lists, player lists) in tracked files.
 - Reminder messages so players learn the commands (now there is `!help` to point them to).
 
 ## Testing
@@ -631,6 +633,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, version name assumed 2026-11-26). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, released 2026-11-27 (the Workshop change note says "V 1.6"; the build is v1.5). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

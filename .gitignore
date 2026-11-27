@@ -15,3 +15,6 @@ Desktop.ini
 # NS2 Launch Pad build output
 output/
 .output-build-info
+
+# Private notes (not for GitHub)
+private/
