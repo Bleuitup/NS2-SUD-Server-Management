@@ -25,6 +25,8 @@
 --     config://SSM_CommMatch.json, read when the map loads.
 --   * Off on Thunderdome by default (author, 2026-11-21): EnabledOnThunderdome (false) in the same
 --     file turns it on there.
+--   * !mycomm and !comm (v1.5, author 2026-11-27) send the same list to one player on request;
+--     see the bottom of this file.
 --
 -- Commander skill per team is the game's own: the Hive gives one commander skill plus an offset,
 -- Marines are skill + offset and Aliens skill - offset (ScoringMixin:GetCommanderTeamSkill).
@@ -120,33 +122,25 @@ local function Round(value)
     return math.floor(value + 0.5)
 end
 
--- The message lines, or nil when there is nothing to say.
-function SSM_CommMatch_GetLines(commander)
-    local team = commander:GetTeamNumber()
-    local names = kTeamNames[team]
-    if not names then
-        return nil
-    end
+-- The closest players to `subject` commanding `team`, as rows ("1. Pepe  +12"), closest first.
+-- Returns "no_skill" when the subject has never commanded, or an empty table when nobody else has.
+local function GetRows(subject, team)
     local otherTeam = team == kTeam1Index and kTeam2Index or kTeam1Index
 
-    local own = GetCommanderSkillFor(commander, team)
+    local own = GetCommanderSkillFor(subject, team)
     if not own then
-        return nil
+        return "no_skill"
     end
 
     local list = {}
     Server.ForAllPlayers(function(player)
-        if player ~= commander and GetListedClient(player) then
+        if player ~= subject and GetListedClient(player) then
             local skill = GetCommanderSkillFor(player, otherTeam)
             if skill then
                 list[#list + 1] = { name = player:GetName(), gap = Round(skill - own) }
             end
         end
     end)
-
-    if #list == 0 then
-        return nil
-    end
 
     table.sort(list, function(a, b)
         if math.abs(a.gap) ~= math.abs(b.gap) then
@@ -155,12 +149,32 @@ function SSM_CommMatch_GetLines(commander)
         return a.name < b.name
     end)
 
+    local rows = {}
+    for i = 1, math.min(kListCount, #list) do
+        local entry = list[i]
+        rows[i] = string.format("%d. %s  %+d", i, entry.name, entry.gap)
+    end
+    return rows
+end
+
+-- The message lines, or nil when there is nothing to say.
+function SSM_CommMatch_GetLines(commander)
+    local team = commander:GetTeamNumber()
+    local names = kTeamNames[team]
+    if not names then
+        return nil
+    end
+
+    local rows = GetRows(commander, team)
+    if type(rows) ~= "table" or #rows == 0 then
+        return nil
+    end
+
     local lines = {
         { string.format("%s took %s commander. Closest %s commanders:", commander:GetName(), names.title, names.other) }
     }
-    for i = 1, math.min(kListCount, #list) do
-        local entry = list[i]
-        lines[#lines + 1] = { string.format("%d. %s  %+d", i, entry.name, entry.gap), true }
+    for _, row in ipairs(rows) do
+        lines[#lines + 1] = { row, true }
     end
 
     return lines
@@ -239,3 +253,99 @@ oldLoginPlayer = Class_ReplaceMethod("CommandStructure", "LoginPlayer", function
 
     return commander
 end)
+
+-- Chat commands (v1.5, author 2026-11-27). Only the caller sees the answer, in their language,
+-- at any point in the game. Off on Thunderdome like the rest of the feature.
+--   !mycomm  the caller's own list: for their team's chair when they are on Marines or Aliens,
+--            for both chairs from spectator or the ready room. It works for ignored players too.
+--   !comm    the list again for whoever sits in a command chair, only when exactly one chair is
+--            taken (bots count as a commander).
+
+local kHeaderKeys = {
+    [kTeam1Index] = { mine = "comm_mine_marine", seated = "comm_seated_marine" },
+    [kTeam2Index] = { mine = "comm_mine_alien", seated = "comm_seated_alien" }
+}
+
+-- Sends one header and its rows, if there are any. True when something was sent.
+local function SendRows(client, header, rows)
+    if type(rows) ~= "table" or #rows == 0 then
+        return false
+    end
+    SSM.Notify(client, header)
+    for _, row in ipairs(rows) do
+        SSM.Notify(client, row, true)
+    end
+    return true
+end
+
+local function IsOff(client, language)
+    if GetIsThunderdome() and not Settings.EnabledOnThunderdome then
+        SSM.Notify(client, SSM.Text(language, "comm_off"))
+        return true
+    end
+    return false
+end
+
+SSM.AddChatCommand("mycomm", function(client)
+    local language = SSM.LanguageOf(client)
+    if IsOff(client, language) then
+        return
+    end
+
+    local player = client and client:GetControllingPlayer()
+    if not player then
+        return
+    end
+
+    local team = player:GetTeamNumber()
+    local teams = kTeamNames[team] and { team } or { kTeam1Index, kTeam2Index }
+
+    local sent = false
+    for _, side in ipairs(teams) do
+        local rows = GetRows(player, side)
+        if rows == "no_skill" then
+            SSM.Notify(client, SSM.Text(language, "comm_no_skill"))
+            return
+        end
+        sent = SendRows(client, SSM.Text(language, kHeaderKeys[side].mine), rows) or sent
+    end
+    if not sent then
+        SSM.Notify(client, SSM.Text(language, "comm_nobody_listed"))
+    end
+end)
+SSM.ListCommand("!mycomm", "cmd_mycomm")
+
+SSM.AddChatCommand("comm", function(client)
+    local language = SSM.LanguageOf(client)
+    if IsOff(client, language) then
+        return
+    end
+
+    local seated = {}
+    Server.ForAllPlayers(function(player)
+        if kTeamNames[player:GetTeamNumber()] and player:isa("Commander") then
+            seated[#seated + 1] = player
+        end
+    end)
+
+    if #seated == 0 then
+        SSM.Notify(client, SSM.Text(language, "comm_no_chair"))
+        return
+    end
+    if #seated > 1 then
+        SSM.Notify(client, SSM.Text(language, "comm_both_chairs"))
+        return
+    end
+
+    local commander = seated[1]
+    local team = commander:GetTeamNumber()
+    local rows = GetHumanClient(commander) and GetRows(commander, team) or "no_skill"
+    if rows == "no_skill" then
+        SSM.Notify(client, SSM.Text(language, "comm_seated_no_skill", commander:GetName()))
+        return
+    end
+    if not SendRows(client, SSM.Text(language, kHeaderKeys[team].seated, commander:GetName()), rows) then
+        SSM.Notify(client, SSM.Text(language, "comm_nobody_listed"))
+    end
+end)
+SSM.ListCommand("!comm", "cmd_comm")

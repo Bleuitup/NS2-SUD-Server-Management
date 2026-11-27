@@ -39,6 +39,8 @@ Current features: consecutive rounds played and minutes played, to simplify spec
 [*]Before a round starts, when someone takes a command chair and the other team has no commander yet, chat shows the 5 players whose commander skill for the other team is closest
 [*]Each name shows the gap: + means above the new commander, - means below
 [*]Players who have never commanded are left out
+[*]Type [b]!mycomm[/b] any time to see your own list. On a team you get the list for your team's chair, from spectator or the ready room you get both. Only you see it
+[*]Type [b]!comm[/b] to see the list again for the commander in the chair, when only one chair is taken. Only you see it
 [*]Not on Thunderdome games
 [/list]
 

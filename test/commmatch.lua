@@ -72,6 +72,7 @@ local function AddPlayer(name, team, commSkill, offset, isBot)
     player.isa = function(self, class) return class == "Commander" and self.commander == true end
     player.GetCommanderSkill = function(self) return self.commSkill end
     player.GetCommanderSkillOffset = function(self) return self.offset end
+    player.client.GetControllingPlayer = function() return player end
     Players[#Players + 1] = player
     return player
 end
@@ -299,5 +300,148 @@ Login(Bleu)
 check(#Sent > 0 and Sent[1].text:find("^Bleu took Marine") ~= nil, "Thunderdome with EnabledOnThunderdome: the list goes out")
 Shared.GetThunderdomeEnabled = nil
 
+
+
+-- ---------------------------------------------------------------------------------------------
+-- !mycomm and !comm (v1.5)
+
+-- Load the chat router again with hooks that can be called, then the feature on top of it.
+local chatHooks, sayHook = {}, nil
+Event.Hook = function(name, fn) chatHooks[name] = fn end
+Shine.Hook = { Add = function(_, _, fn) sayHook = fn end }
+
+-- A map load with these settings: the router, the feature, then the first server update.
+local function LoadWith(settings)
+    Files["SSM_CommMatch.json"] = settings
+    dofile("source/lua/SSM/Commands.lua")
+    dofile(kServerFile)
+    chatHooks.UpdateServer()
+end
+LoadWith({ IgnoredPlayers = {}, EnabledOnThunderdome = false })
+for _, p in ipairs(Players) do p.commander = false end
+Bleu.team = kTeam1Index
+local Ana, Juan = Players[4], Players[5]
+
+local function Say(player, text)
+    Sent = {}
+    return sayHook(player.client, { message = text })
+end
+
+local function SentTo(player)
+    for _, m in ipairs(Sent) do
+        if m.target ~= player.client then return false end
+    end
+    return #Sent > 0
+end
+
+-- From spectator: both chairs. Ana: marine 2320, alien 2080.
+check(Say(Ana, "!mycomm") == "", "the typed command is not shown in chat")
+t = Texts()
+check(#t == 12, "spectator: two headers and 5 rows each (got " .. #t .. ")")
+check(t[1] == "If you command Marines, closest alien commanders:", "marine header: " .. tostring(t[1]))
+check(t[2] == "1. Leo  +180" and t[3] == "2. Pepe  -210" and t[4] == "3. Juan  -220" and t[5] == "4. LZZ  -255"
+    and t[6] == "5. Bleu  -420", "marine rows, got:\n" .. table.concat(t, "\n", 2, 6))
+check(t[7] == "If you command Aliens, closest marine commanders:", "alien header: " .. tostring(t[7]))
+check(t[8] == "1. Bleu  +20" and t[9] == "2. Pepe  +110" and t[10] == "3. LZZ  -145" and t[11] == "4. Leo  +420"
+    and t[12] == "5. Max  -580", "alien rows, got:\n" .. table.concat(t, "\n", 8, 12))
+check(SentTo(Ana), "only the caller sees it")
+check(Sent[1].prefix == "[NS2 SUD]" and Sent[2].prefix == "" and Sent[7].prefix == "[NS2 SUD]", "tag on the headers only")
+
+-- From the ready room: both chairs too. With / as well.
+Say(Juan, "/mycomm")
+check(#Sent == 12 and SentTo(Juan), "ready room with /: both chairs")
+
+-- On a team: that team's chair only, the same rows the chair would post. Works mid-round.
+State = kGameState.Started
+Say(Bleu, "!MyComm")
+t = Texts()
+check(#t == 6 and t[1] == "If you command Marines, closest alien commanders:" and t[2] == "1. Juan  +0"
+    and t[3] == "2. Pepe  +10" and t[6] == "5. Leo  +400", "marine player, mid-round:\n" .. table.concat(t, "\n"))
+local Pepe2 = Players[2]
+Say(Pepe2, "!mycomm")
+check(#Sent == 6 and Sent[1].text == "If you command Aliens, closest marine commanders:", "alien player: alien chair only")
+
+-- Never commanded.
+local Newbie2 = Players[8]
+Say(Newbie2, "!mycomm")
+check(#Sent == 1 and Sent[1].text == "You have never commanded, so there is nothing to compare.", "never commanded: " .. tostring(Sent[1] and Sent[1].text))
+
+-- Nobody else has commanded.
+local everyone = Players
+Players = { Bleu, Newbie2 }
+Say(Bleu, "!mycomm")
+check(#Sent == 1 and Sent[1].text == "Nobody else on the server has commanded yet.", "nobody to list: " .. tostring(Sent[1] and Sent[1].text))
+Players = everyone
+
+-- !comm: no chair taken.
+Say(Ana, "!comm")
+check(#Sent == 1 and Sent[1].text == "Nobody is in a command chair.", "no commander: " .. tostring(Sent[1] and Sent[1].text))
+
+-- One chair taken: that commander's list, to the caller only. The caller can be on it.
+Bleu.commander = true
+Say(Ana, "!comm")
+t = Texts()
+check(#t == 6 and t[1] == "Bleu is Marine commander. Closest alien commanders:" and t[2] == "1. Juan  +0"
+    and t[4] == "3. Ana  -20", "one commander:\n" .. table.concat(t, "\n"))
+check(SentTo(Ana), "!comm: only the caller sees it")
+
+-- The commander can ask too.
+Say(Bleu, "!comm")
+check(#Sent == 6 and Sent[1].text:find("^Bleu is Marine") ~= nil, "the commander asking for their own list")
+
+-- Both chairs taken: no list.
+Pepe2.commander = true
+Say(Ana, "!comm")
+check(#Sent == 1 and Sent[1].text == "Both command chairs are taken, so there is no list.", "both chairs: " .. tostring(Sent[1] and Sent[1].text))
+
+-- Alien chair only.
+Bleu.commander = false
+Say(Ana, "!comm")
+check(#Sent == 6 and Sent[1].text == "Pepe is Alien commander. Closest marine commanders:" and Sent[2].text == "1. Bleu  -10",
+    "alien commander: " .. tostring(Sent[1] and Sent[1].text))
+Pepe2.commander = false
+
+-- A commander who never commanded, and a bot in the chair.
+Newbie2.commander = true
+Say(Ana, "!comm")
+check(#Sent == 1 and Sent[1].text == "Newbie has never commanded, so there is nothing to compare.", "never-commanded commander: " .. tostring(Sent[1] and Sent[1].text))
+Newbie2.commander = false
+local Bot2 = Players[9]
+Bot2.commander = true
+Say(Ana, "!comm")
+check(#Sent == 1 and Sent[1].text:find("^Bot has never commanded") ~= nil, "bot commander: no list")
+Bot2.commander = false
+
+-- In the caller's language.
+SSM.SetLanguage(Ana.client, "es")
+Say(Ana, "!mycomm")
+check(Sent[1].text == "Si comanda Marines, los comandantes alien más cercanos:" and Sent[2].text == "1. Leo  +180", "Spanish: " .. tostring(Sent[1].text))
+Say(Ana, "!comm")
+check(Sent[1].text == "No hay nadie en una silla de comandante.", "Spanish !comm: " .. tostring(Sent[1].text))
+SSM.SetLanguage(Ana.client, "en")
+
+-- Ignored players still get their own list, and are left off everyone else's.
+LoadWith({ IgnoredPlayers = { 1003 }, EnabledOnThunderdome = false })
+Say(Ana, "!mycomm")
+check(#Sent == 12, "an ignored player gets their own list")
+Say(Bleu, "!mycomm")
+check(not table.concat(Texts(), "\n"):find("Ana"), "an ignored player is not on anyone else's list")
+
+-- Thunderdome: off unless EnabledOnThunderdome.
+LoadWith({ IgnoredPlayers = {}, EnabledOnThunderdome = false })
+Shared.GetThunderdomeEnabled = function() return true end
+Say(Ana, "!mycomm")
+check(#Sent == 1 and Sent[1].text == "Commander match is off on Thunderdome games.", "Thunderdome: !mycomm off")
+Say(Ana, "!comm")
+check(#Sent == 1 and Sent[1].text == "Commander match is off on Thunderdome games.", "Thunderdome: !comm off")
+LoadWith({ IgnoredPlayers = {}, EnabledOnThunderdome = true })
+Say(Ana, "!mycomm")
+check(#Sent == 12, "Thunderdome with EnabledOnThunderdome: !mycomm works")
+Shared.GetThunderdomeEnabled = nil
+State = kGameState.NotStarted
+
+-- Listed in !help.
+local help = table.concat(SSM_GetCommandLines("en"), "\n")
+check(help:find("!mycomm", 1, true) ~= nil and help:find("!comm ", 1, true) ~= nil, "!help lists both:\n" .. help)
 print(string.format("%d passed, %d failed", passes, failures))
 os.exit(failures == 0 and 0 or 1)

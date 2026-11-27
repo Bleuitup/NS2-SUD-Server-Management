@@ -82,6 +82,56 @@ en.spectator_joined = "You start as a spectator. Join a team when a player slot 
 es.spectator_joined = "Ingresaste como espectador. Cuando se libere un lugar de jugador, ya se puede entrar a un equipo."
 pt.spectator_joined = "Você entrou como espectador. Entre em um time quando houver uma vaga de jogador livre."
 
+-- Commander Match: !mycomm and !comm. The list posted when someone takes a chair goes to
+-- everyone and stays in English; these answers go to one player.
+en.cmd_mycomm = "The 5 players whose commander skill is closest to yours, for the other team"
+es.cmd_mycomm = "Los 5 jugadores con la habilidad de comandante más cercana a la suya, para el otro equipo"
+pt.cmd_mycomm = "Os 5 jogadores com a habilidade de comandante mais próxima da sua, para o outro time"
+
+en.cmd_comm = "The same list for whoever is in the command chair, when only one chair is taken"
+es.cmd_comm = "La misma lista para quien esté en la silla de comandante, cuando hay una sola ocupada"
+pt.cmd_comm = "A mesma lista para quem estiver na cadeira de comandante, quando só uma está ocupada"
+
+en.comm_mine_marine = "If you command Marines, closest alien commanders:"
+es.comm_mine_marine = "Si comanda Marines, los comandantes alien más cercanos:"
+pt.comm_mine_marine = "Se você comandar Marines, os comandantes alien mais próximos:"
+
+en.comm_mine_alien = "If you command Aliens, closest marine commanders:"
+es.comm_mine_alien = "Si comanda Aliens, los comandantes marine más cercanos:"
+pt.comm_mine_alien = "Se você comandar Aliens, os comandantes marine mais próximos:"
+
+en.comm_seated_marine = "%s is Marine commander. Closest alien commanders:"
+es.comm_seated_marine = "%s es comandante Marine. Comandantes alien más cercanos:"
+pt.comm_seated_marine = "%s é comandante Marine. Comandantes alien mais próximos:"
+
+en.comm_seated_alien = "%s is Alien commander. Closest marine commanders:"
+es.comm_seated_alien = "%s es comandante Alien. Comandantes marine más cercanos:"
+pt.comm_seated_alien = "%s é comandante Alien. Comandantes marine mais próximos:"
+
+en.comm_no_skill = "You have never commanded, so there is nothing to compare."
+es.comm_no_skill = "Todavía no comandó ninguna partida, así que no hay con qué comparar."
+pt.comm_no_skill = "Você ainda não comandou, então não há com o que comparar."
+
+en.comm_seated_no_skill = "%s has never commanded, so there is nothing to compare."
+es.comm_seated_no_skill = "%s todavía no comandó ninguna partida, así que no hay con qué comparar."
+pt.comm_seated_no_skill = "%s ainda não comandou, então não há com o que comparar."
+
+en.comm_nobody_listed = "Nobody else on the server has commanded yet."
+es.comm_nobody_listed = "Nadie más en el servidor comandó todavía."
+pt.comm_nobody_listed = "Ninguém mais no servidor comandou ainda."
+
+en.comm_no_chair = "Nobody is in a command chair."
+es.comm_no_chair = "No hay nadie en una silla de comandante."
+pt.comm_no_chair = "Não há ninguém em uma cadeira de comandante."
+
+en.comm_both_chairs = "Both command chairs are taken, so there is no list."
+es.comm_both_chairs = "Las dos sillas de comandante están ocupadas, así que no hay lista."
+pt.comm_both_chairs = "As duas cadeiras de comandante estão ocupadas, então não há lista."
+
+en.comm_off = "Commander match is off on Thunderdome games."
+es.comm_off = "La comparación de comandantes está desactivada en Thunderdome."
+pt.comm_off = "A comparação de comandantes está desligada no Thunderdome."
+
 -- Pause (Thunderdome and passworded games)
 en.cmd_pause = "Pause the game (Thunderdome and passworded games)"
 es.cmd_pause = "Pausar la partida (Thunderdome y partidas con contraseña)"

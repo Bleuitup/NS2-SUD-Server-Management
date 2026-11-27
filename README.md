@@ -122,6 +122,16 @@ team is closest to the new commander's, and the gap:
 - Off on Thunderdome unless `EnabledOnThunderdome` is set.
 - Needs Shine for the chat message. Nothing is enforced.
 
+### Chat commands
+
+Only the player who types them sees the answer, in their `!lang` language, at any point in the
+game (off on Thunderdome like the rest).
+
+- `!mycomm`: your own list. On Marines or Aliens it is for your team's chair; from spectator or
+  the ready room you get both, Marine first. `+` means that player is above you.
+- `!comm`: the list again for whoever is in a command chair, only when exactly one chair is
+  taken. With both taken, or none, it says so.
+
 ### Server settings
 
 `SSM_CommMatch.json` in the server's config folder, created on first run:

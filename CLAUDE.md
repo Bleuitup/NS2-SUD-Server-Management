@@ -204,6 +204,13 @@ other team** is closest to the new commander's, with the signed gap. Information
   `config://SSM_CommMatch.json` (written empty on first run, read when the map loads). Ignored
   players are never listed. If one takes a chair, the list still goes out as for anyone (the
   author's pick, 2026-11-19; first built silent).
+- **`!mycomm` and `!comm`** (author, 2026-11-27, v1.5): the same list on request, sent only to
+  the caller (`SSM.Notify`, their `!lang` language), in any game state, no cooldown, off on
+  Thunderdome unless `EnabledOnThunderdome`. `!mycomm` = the caller's own list: for their team's
+  chair on Marines/Aliens, both chairs (Marine first) from spectator or the ready room (my pick,
+  2026-11-27, not asked); ignored players get theirs too. `!comm` = the list for whoever sits in
+  a chair, only when exactly one chair (bots included) is taken; otherwise a line saying none or
+  both are taken. The chair broadcast stays English (`SSM.NotifyAll`).
 
 ### How it works (`CommMatch/Server.lua`)
 
@@ -586,7 +593,9 @@ Parked or dropped (2026-11-16):
   connect, the map-change exemption (used once, window, old save, empty last frames).
 - `lua test/commmatch.lua` does the same for Commander Match: who is listed, order and gaps, the
   cooldown, the other chair taken, round started, commander at 0, bots, no Shine, and an error
-  not breaking the login.
+  not breaking the login; `!mycomm` (spectator, ready room, each team, mid-round, never
+  commanded, nobody to list) and `!comm` (no chair, one, both, a never-commanded or bot
+  commander), only the caller seeing it, Spanish, ignored players, Thunderdome, `!help`. 74 checks.
 - `lua test/pause.lua`: when pausing is allowed (pub, password set and removed, remembered across
   a map change, not after a restart, Thunderdome, the off switch), the round-start line, pause and
   resume with their chat lines, the per-team limit and round reset, pause on disconnect, and the
@@ -622,6 +631,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, version name assumed 2026-11-26). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, version name assumed 2026-11-26). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.
