@@ -482,7 +482,7 @@ Turns on Shine's all talk between rounds.
 - Not checked in game: Shine's line wording, and that the 8v8/6v6 Shine configs have
   `basecommands` enabled.
 
-## Feature: Skill Requirement (`SkillRequirement/Server.lua`, `SkillRequirement/Client.lua`; v1.6, built 2026-11-27 on `feat/skill-requirement`)
+## Feature: Skill Requirement (`SkillRequirement/Server.lua`, `SkillRequirement/Client.lua`; v1.6, released 2026-11-27)
 
 Off unless a server's `SSM_SkillRequirement.json` says `Enabled`. Players below `MinTier` (4) who
 are not exempt stay in spectator. The per-server details (the allowed list, who is in the allow
@@ -528,6 +528,7 @@ copy them into tracked files (author, 2026-11-27). Public text stays neutral; ne
 
 ## Open threads (remind the author)
 
+- **v1.6 published and tagged 2026-11-27** (merged into `main`; Workshop updated 13:20 by the page clock): the Skill Requirement and `SSM.IsAdmin`. The description section is the author's three bullets (no ip-api line, the author's choice; the README still explains the lookup). **Off until a server's `SSM_SkillRequirement.json` turns it on**; the 8v8 settings are in `private/skill-requirement.md`, applied by the Server Administration session with the author's OK. To see in game: the ip-api answer, the admin menu buttons, `#id` and name lookups, `SaveUsers` on the live file, the welcome's line lengths, the "¿" in the chat font.
 - **v1.4 published and tagged 2026-11-26** (merged into `main`; the Workshop description has the
   All talk section): All Talk on at round end and map load. To see in game: Shine's line, that it
   comes back on after a map change, and that the 8v8 and 6v6 Shine configs have `basecommands`
@@ -682,6 +683,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, released 2026-11-27 (the Workshop change note says "V 1.6"; the build is v1.5); v1.6: Skill Requirement, and SSM.IsAdmin leaving out the allow group, built 2026-11-27, not released. Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, released 2026-11-27 (the Workshop change note says "V 1.6"; the build is v1.5); v1.6: Skill Requirement, and SSM.IsAdmin leaving out the allow group, released 2026-11-27 (change note "V 1.6 (for real_final_final_V3)"). Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.
