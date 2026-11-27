@@ -80,3 +80,22 @@ SSM.AddChatCommand("lang", function(client, args)
     end
 end)
 SSM.ListCommand("!lang", "cmd_lang")
+
+-- Who counts as an admin for SSM's admin commands (author, 2026-11-21: "naturally Shine admins
+-- should have access"): the server console, and anyone in a Shine user group except the skill
+-- requirement's allow group (SudAllow, author 2026-11-27), whose members are ordinary players
+-- let past the requirement. `access`, a permission name, also lets in anyone given it explicitly.
+SSM.AllowGroup = SSM.AllowGroup or "SudAllow"
+function SSM.IsAdmin(client, access)
+    if not client then
+        return true
+    end
+    if not Shine then
+        return false
+    end
+    local user = Shine.GetUserData and Shine:GetUserData(client)
+    if user and user.Group ~= SSM.AllowGroup then
+        return true
+    end
+    return access ~= nil and Shine.HasAccess ~= nil and Shine:HasAccess(client, access) == true
+end

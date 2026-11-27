@@ -363,3 +363,99 @@ pt.joinpool_admin_on = "Um admin ligou de novo a SUD Queue."
 en.joinpool_admin_off_you = "The SUD Queue was switched off for this round, so you are no longer in it."
 es.joinpool_admin_off_you = "La SUD Queue se desactivó en esta partida, así que ya no está en ella."
 pt.joinpool_admin_off_you = "A SUD Queue foi desligada nesta partida, então você não está mais nela."
+
+-- Skill Requirement (v1.6). The welcome and the refusals never name a region (author,
+-- 2026-11-27). skill_spanish is sent in Spanish to everyone, so it is only in es.
+en.cmd_sud_allow = "sud_allow <#id|name|Steam ID>: let a player play even below the skill requirement (admins)"
+es.cmd_sud_allow = "sud_allow <#id|nombre|Steam ID>: dejar jugar a alguien aunque no llegue al nivel pedido (admins)"
+pt.cmd_sud_allow = "sud_allow <#id|nome|Steam ID>: deixar alguém jogar mesmo abaixo do nível pedido (admins)"
+
+en.cmd_sud_disallow = "sud_disallow <#id|name|Steam ID>: undo sud_allow (admins)"
+es.cmd_sud_disallow = "sud_disallow <#id|nombre|Steam ID>: deshacer sud_allow (admins)"
+pt.cmd_sud_disallow = "sud_disallow <#id|nome|Steam ID>: desfazer sud_allow (admins)"
+
+en.skill_welcome_1 = "Welcome to NS2 SUD! Games here are semi-competitive, and most of our players speak Spanish or Portuguese, so it is hard for them to guide newcomers in English during a round."
+es.skill_welcome_1 = "Bienvenido a NS2 SUD! Las partidas aquí son semicompetitivas y la mayoría de los jugadores habla español o portugués, así que es difícil guiar a los nuevos en inglés durante una partida."
+pt.skill_welcome_1 = "Bem-vindo ao NS2 SUD! As partidas aqui são semicompetitivas e a maioria dos jogadores fala espanhol ou português, então é difícil orientar novatos em inglês durante uma partida."
+
+en.skill_welcome_2 = "The NA and EU 10v10 servers are a great place to learn the game, and our Discord (in the server name) has tutorials and game guides."
+es.skill_welcome_2 = "Los servidores 10v10 de NA y EU son un gran lugar para aprender el juego, y nuestro Discord (en el nombre del servidor) tiene tutoriales y guías del juego."
+pt.skill_welcome_2 = "Os servidores 10v10 de NA e EU são um ótimo lugar para aprender o jogo, e nosso Discord (no nome do servidor) tem tutoriais e guias do jogo."
+
+en.skill_welcome_3 = "You're welcome to stay and spectate, and we hope to see you on a team here soon!"
+es.skill_welcome_3 = "Puede quedarse como espectador, y esperamos que pronto juegue en un equipo aquí."
+pt.skill_welcome_3 = "Fique à vontade para assistir como espectador. Esperamos ver você num time aqui em breve!"
+
+es.skill_spanish = "¿Habla español? Avise en el chat y un admin puede darle acceso para jugar."
+
+en.skill_too_low = "Your Hive skill isn't high enough to play on this server yet. We ask for a tier %d badge (%s, Hive skill above %s), and our Discord has guides to help you get there."
+es.skill_too_low = "Su habilidad Hive todavía no alcanza para jugar en este servidor. Pedimos una insignia de nivel %d (%s, habilidad Hive mayor a %s), y nuestro Discord tiene guías que le pueden ayudar a llegar."
+pt.skill_too_low = "Sua habilidade Hive ainda não é suficiente para jogar neste servidor. Pedimos uma insígnia de nível %d (%s, habilidade Hive acima de %s), e nosso Discord tem guias para ajudar você a chegar lá."
+
+en.skill_loading = "You can't join a team yet because your Hive skill hasn't loaded, and team shuffles and balance need it. Please wait a few seconds."
+es.skill_loading = "Todavía no puede unirse a un equipo porque su habilidad Hive no cargó, y el sorteo y el balance de equipos la necesitan. Espere unos segundos."
+pt.skill_loading = "Você ainda não pode entrar num time porque sua habilidade Hive não carregou, e o sorteio e o balanço dos times precisam dela. Aguarde alguns segundos."
+
+en.skill_failed = "Your Hive skill didn't load. Reconnect to the server to try again."
+es.skill_failed = "Su habilidad Hive no cargó. Vuelva a conectarse al servidor para intentarlo de nuevo."
+pt.skill_failed = "Sua habilidade Hive não carregou. Reconecte ao servidor para tentar de novo."
+
+en.skill_checking = "You can't join a team just yet: the server is still checking your account. Please wait a few seconds."
+es.skill_checking = "Todavía no puede unirse a un equipo: el servidor sigue revisando su cuenta. Espere unos segundos."
+pt.skill_checking = "Você ainda não pode entrar num time: o servidor ainda está verificando sua conta. Aguarde alguns segundos."
+
+en.skill_admin = "%s (%s, T%d) is restricted. To let them play: sud_allow %s, or Sud Allow in the admin menu."
+es.skill_admin = "%s (%s, T%d) está restringido. Para que pueda jugar: sud_allow %s, o Sud Allow en el menú de admin."
+pt.skill_admin = "%s (%s, T%d) está restrito. Para deixar jogar: sud_allow %s, ou Sud Allow no menu de admin."
+
+en.skill_admin_country = "%s (%s, %s, T%d) is restricted. To let them play: sud_allow %s, or Sud Allow in the admin menu."
+es.skill_admin_country = "%s (%s, %s, T%d) está restringido. Para que pueda jugar: sud_allow %s, o Sud Allow en el menú de admin."
+pt.skill_admin_country = "%s (%s, %s, T%d) está restrito. Para deixar jogar: sud_allow %s, ou Sud Allow no menu de admin."
+
+en.allow_no_access = "Only admins can use sud_allow and sud_disallow."
+es.allow_no_access = "Solo los admins pueden usar sud_allow y sud_disallow."
+pt.allow_no_access = "Só admins podem usar sud_allow e sud_disallow."
+
+en.allow_no_shine = "Shine's user list isn't available, so nothing was changed."
+es.allow_no_shine = "La lista de usuarios de Shine no está disponible, así que no se cambió nada."
+pt.allow_no_shine = "A lista de usuários do Shine não está disponível, então nada foi alterado."
+
+en.allow_usage = "Usage: sud_allow <#id|name|Steam ID>. The #id is the number sh_status shows."
+es.allow_usage = "Uso: sud_allow <#id|nombre|Steam ID>. El #id es el número que muestra sh_status."
+pt.allow_usage = "Uso: sud_allow <#id|nome|Steam ID>. O #id é o número que o sh_status mostra."
+
+en.disallow_usage = "Usage: sud_disallow <#id|name|Steam ID>. The #id is the number sh_status shows."
+es.disallow_usage = "Uso: sud_disallow <#id|nombre|Steam ID>. El #id es el número que muestra sh_status."
+pt.disallow_usage = "Uso: sud_disallow <#id|nome|Steam ID>. O #id é o número que o sh_status mostra."
+
+en.allow_not_found = "No player found. Use the #id from sh_status, a name, or a Steam ID."
+es.allow_not_found = "No se encontró al jugador. Use el #id de sh_status, un nombre o un Steam ID."
+pt.allow_not_found = "Jogador não encontrado. Use o #id do sh_status, um nome ou um Steam ID."
+
+en.allow_already = "%s is already in %s."
+es.allow_already = "%s ya está en %s."
+pt.allow_already = "%s já está em %s."
+
+en.allow_other_group = "%s is in the Shine group %s, so they can already play. Nothing was changed."
+es.allow_other_group = "%s está en el grupo de Shine %s, así que ya puede jugar. No se cambió nada."
+pt.allow_other_group = "%s está no grupo do Shine %s, então já pode jogar. Nada foi alterado."
+
+en.allow_done = "%s can now play here (added to %s)."
+es.allow_done = "%s ya puede jugar aquí (agregado a %s)."
+pt.allow_done = "%s já pode jogar aqui (adicionado a %s)."
+
+en.allow_you = "An admin let you play on this server. Welcome!"
+es.allow_you = "Un admin le dio acceso para jugar en este servidor. Bienvenido."
+pt.allow_you = "Um admin liberou você para jogar neste servidor. Bem-vindo!"
+
+en.disallow_not_in = "%s is not in %s."
+es.disallow_not_in = "%s no está en %s."
+pt.disallow_not_in = "%s não está em %s."
+
+en.disallow_other_group = "%s is in the Shine group %s, not %s. Nothing was changed."
+es.disallow_other_group = "%s está en el grupo de Shine %s, no en %s. No se cambió nada."
+pt.disallow_other_group = "%s está no grupo do Shine %s, não em %s. Nada foi alterado."
+
+en.disallow_done = "%s was removed from %s."
+es.disallow_done = "%s fue quitado de %s."
+pt.disallow_done = "%s foi removido de %s."

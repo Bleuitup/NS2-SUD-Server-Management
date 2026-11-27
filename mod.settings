@@ -8,7 +8,7 @@ Server tools for the NS2 Sudamerica server.
 
 The scope of this mod is bound to simplify admin workload and ease the experience of the players of NS2 Sudamerica. This mod will never enact gameplay or balance changes of any kind.
 
-Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; the closest commander matchups before a round; a pause for Thunderdome and passworded games; disconnected players keeping their place in the round; the SUD Queue, which pairs up players waiting to get into a 6v6 or 7v7; and all talk between rounds.
+Current features: consecutive rounds played and minutes played, to simplify spectator rotation so everyone gets to play; everyone joining as a spectator; the closest commander matchups before a round; a pause for Thunderdome and passworded games; disconnected players keeping their place in the round; the SUD Queue, which pairs up players waiting to get into a 6v6 or 7v7; all talk between rounds; and a skill requirement admins can switch on for a server.
 
 [h1]Commands and language[/h1]
 [list]
@@ -82,6 +82,15 @@ New in 1.3 and still being tested on live games.
 [*]When a round ends, and when a map loads, all talk is switched on so everyone can hear each other
 [*]It stays on until an admin turns it off with [b]!alltalk[/b]
 [*]Not on Thunderdome games
+[/list]
+
+[h1]Skill requirement[/h1]
+New in 1.6.
+[list]
+[*]Admins can set a minimum Hive skill tier for a server, with exceptions they choose. Players below it can stay and spectate
+[*]If your Hive skill hasn't loaded yet, you wait in spectator for a few seconds, since team shuffles and balance need it. If it doesn't load, reconnect
+[*]Admins let a player in with [b]sud_allow[/b] in the console, or the Sud Allow button in Shine's admin menu
+[*]Not on Thunderdome or passworded games
 [/list]
 
 The pause and the handling of disconnected players are ported from Dragon's NSL Mod.

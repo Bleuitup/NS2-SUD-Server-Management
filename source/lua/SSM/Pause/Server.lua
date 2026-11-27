@@ -103,6 +103,11 @@ if oldSetPassword then
     end
 end
 
+-- Whether the server has a password (also read by the skill requirement, v1.6).
+function SSM.HasPassword()
+    return hasPassword
+end
+
 local function GetIsThunderdome()
     return Shared.GetThunderdomeEnabled ~= nil and Shared.GetThunderdomeEnabled() == true
 end

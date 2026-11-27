@@ -20,7 +20,7 @@ mod.settings                       Workshop metadata and description (never put 
 preview.jpg                        Workshop preview, 512x512 (author's GPT artwork; Launch Pad scales it to 512)
 source/lua/entry/SSM.entry         entry: Shared, Server and Client (since v1.2: the pause, and Saved Players' client fix)
 source/lua/SSM/Shared.lua          loads Pause/Shared.lua (server, client and predict)
-source/lua/SSM/Client.lua          loads Pause/Client.lua and SavedPlayers/Client.lua
+source/lua/SSM/Client.lua          loads the client files (pause, Saved Players, Join Pool, Skill Requirement admin menu)
 source/lua/SSM/Server.lua          loads the shared files, then each feature's server file
 source/lua/SSM/Messages.lua        the mod's chat voice ([NS2 SUD], magenta), console print, languages
 source/lua/SSM/Strings.lua         every private text in English, Spanish and Portuguese
@@ -33,6 +33,7 @@ test/pause.lua                     logic test for the pause's server part
 test/savedplayers.lua              logic test for Saved Players (with Spectator On Connect)
 test/joinpool.lua                  logic test for Join Pool
 test/alltalk.lua                   logic test for All Talk
+test/skillrequirement.lua          logic test for the Skill Requirement (with Join Pool)
 output/                            Launch Pad build output, gitignored
 ```
 
@@ -481,6 +482,50 @@ Turns on Shine's all talk between rounds.
 - Not checked in game: Shine's line wording, and that the 8v8/6v6 Shine configs have
   `basecommands` enabled.
 
+## Feature: Skill Requirement (`SkillRequirement/Server.lua`, `SkillRequirement/Client.lua`; v1.6, built 2026-11-27 on `feat/skill-requirement`)
+
+Off unless a server's `SSM_SkillRequirement.json` says `Enabled`. Players below `MinTier` (4) who
+are not exempt stay in spectator. The per-server details (the allowed list, who is in the allow
+group) live only in the server config and in `private/skill-requirement.md`, which git ignores: never
+copy them into tracked files (author, 2026-11-27). Public text stays neutral; never obfuscate.
+
+### Rules (author's picks, 2026-11-27)
+
+- Tier = the scoreboard badge, `GetPlayerSkillTier(skill, player:GetIsRookie(), adagradSum)`,
+  computed here (the game's `GetSkillTier()` caches its first answer).
+- Exempt: bots, anyone `Shine:GetUserData` lists (any group), anyone with `sud_allowed`
+  (`Shine:HasAccess`; SuperAdmins do NOT pass it, tested live, hence the user-list check), and
+  players whose country code is on `AllowedCountries`.
+- Country: ip-api.com (`fields=status,countryCode`), the same service Enhanced Scoreboard used
+  (author: "do what Enhanced Scoreboard used"; OK to send IPs for this). Only for players below
+  `MinTier` who are not exempt, only with a non-empty list; up to 3 tries 5 s apart; in memory for
+  the map, never saved. No answer in `UnknownCountryHoldSeconds` (30): let through. Private
+  addresses: let through.
+- Hive skill -1 (not loaded): held, "please wait"; after `HiveSkillGiveUpSeconds` (60), "reconnect".
+- Held players: every unforced `JoinTeam` out of spectator or the ready room is refused (forced
+  moves go through). Restricted or never-loaded players in the ready room are forced to spectator
+  (map change, shuffles). `!joinq` and F4 are refused; the spectator reminder skips them.
+- Messages (author's wording): welcome in three lines once (5 s after connect), Spanish line on
+  the first refusal (always in Spanish), then the tier line; welcome and Spanish remembered 12 h
+  in `SSM_SkillRequirementState.json`. One refusal line a second at most. Admins get one line per
+  player per map: name, `#id`, country code, tier, `sud_allow #id`. Nothing tells the player
+  their country.
+- Not on Thunderdome, not while the server has a password (`SSM.HasPassword`, from the pause).
+- `sud_allow` / `sud_disallow <#id|name|Steam ID>` (console, admins): `#id` via
+  `Shine.GetClientByID`, names and numbers via `Shine:GetClient`, offline by NS2 ID or
+  `STEAM_0`. Creates `AllowGroup` if missing (whitelist, immunity 0, `sud_allowed` only), user
+  note = name, `Shine:SaveUsers`. Never moves someone out of another group. Admin menu buttons
+  "Sud Allow" / "Remove Sud Allow" (client, `Shine.AdminMenu:AddCommand`, category NS2 SUD).
+- **`SSM.IsAdmin` (Commands.lua, v1.6):** admin = console or any Shine user whose group is not
+  `SSM.AllowGroup`, or an explicit permission. Join Pool's `sud_joinpool` uses it. Before v1.6
+  any Shine user counted, so SudAllow members (created live 2026-11-27) could run
+  `sud_joinpool off` on v1.5. `sud_swap` uses `HasAccess("sud_swap")` and was never affected.
+
+### Not checked in game yet
+
+- The ip-api request from the server (`Shared.SendHTTPRequest`), the admin menu buttons, Shine's
+  `#id` and name lookups, `SaveUsers` writing the live UserConfig.json, the welcome's line lengths.
+
 ## Open threads (remind the author)
 
 - **v1.4 published and tagged 2026-11-26** (merged into `main`; the Workshop description has the
@@ -554,7 +599,7 @@ Parked or dropped (2026-11-16):
 
 ## Planned (author's ideas, not built yet)
 
-- **Join Pool: F4, uneven fills, `!swapq` (agreed 2026-11-26, planned v1.5 then v1.6).**
+- **Join Pool: F4, uneven fills, `!swapq` (agreed 2026-11-26, planned v1.5 then v1.6; v1.6 became the Skill Requirement on 2026-11-27, so the rest goes in a later version).**
   Player-facing flowchart: Artifact "SUD Queue" (https://claude.ai/artifact/JaALukeggEjKynU6UheHNk).
   Everything only while Lockteams is locked; unlocked = anyone can join ("all bets are off").
   - **F4 (v1.5, built on `feat/f4-queue`):** a spectator's own F4 (`rr`) while the pool runs = `!joinq`; stays spectator;
@@ -578,8 +623,6 @@ Parked or dropped (2026-11-16):
     leave that team) types it from the bench: swap when the joiner next dies (default) or at once
     (`SwapBackImmediately`, false; `SwapPeople`). The joiner goes back into the pool (no order:
     the pick is by elo). Joiner already gone and team short: straight back in.
-- **Skill requirement (planned v1.6, not built).** Plan in `private/region-rule.md`, kept out of
-  git on purpose: never put its details (country lists, player lists) in tracked files.
 - Reminder messages so players learn the commands (now there is `!help` to point them to).
 
 ## Testing
@@ -613,6 +656,12 @@ Parked or dropped (2026-11-16):
 - `lua test/alltalk.lua`: on at map load and round end, Shine's line only when it changes, not
   saved, never turned off, an admin's off kept until the round ends, the plugin enabling late or
   never, Thunderdome, no Shine, the off switch.
+- `lua test/skillrequirement.lua`: defaults (off), who is held (tiers, rookie, adagrad cap, MinTier),
+  exemptions (user list, permission, bots), password and Thunderdome, Hive skill loading and never
+  loading, the ready-room move, the country lookup (request, allowed, other, no lookup for T4,
+  exempt or LAN, retries, the 30 s let-through), the messages and their once-only memory across a
+  map change, admin lines, `SSM.IsAdmin`, `sud_allow` / `sud_disallow` (every case), Spanish, the
+  SUD Queue refusal and reminder. 112 checks.
 - Real behavior has to be checked on a server (Launch Pad listen server with Shine loaded). No
   test-only console commands.
 
@@ -633,6 +682,6 @@ Dragon's NSL Mod is whitelisted and does the same, and Dragon is no longer aroun
 
 ## Versioning
 
-Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, released 2026-11-27 (the Workshop change note says "V 1.6"; the build is v1.5). Tag
+Letter steps for fixes to existing features (v1.0 -> v1.0a -> v1.0b), the author's choice; new features step the number (v1.1: Spectator On Connect, Commander Match, !help, !lang - agreed 2026-11-19; v1.2: pause and saved players; v1.3: Join Pool, agreed 2026-11-21; v1.3a: round-start wait; v1.3b: Spectator On Connect, Commander Match and Join Pool off on Thunderdome; v1.3c: `!readyq`, only living players kept, `[D/C]` scoreboard entry; v1.4: All Talk, released 2026-11-26; v1.5: F4 joins the pool, spectator hint, "SUD Queue" in chat, commanders not kept in public games, !mycomm and !comm, released 2026-11-27 (the Workshop change note says "V 1.6"; the build is v1.5); v1.6: Skill Requirement, and SSM.IsAdmin leaving out the allow group, built 2026-11-27, not released. Tag
 `vX.Y` (annotated, `"vX.Y - Workshop release"`) only after the author says the Workshop publish
 is live.

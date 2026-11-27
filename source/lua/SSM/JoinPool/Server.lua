@@ -44,6 +44,8 @@
 --     spectators who are not queued get "press F4 or type !joinq" privately, while the pool could
 --     place them (CurrentTeams). Mid-round the only new spectators are people who just connected,
 --     who may be away or alt-tabbed, hence the repeat. SpectatorHintEverySeconds 0 switches it off.
+--   * Skill Requirement (v1.6): players it holds are refused !joinq and F4 (it says why) and get no
+--     spectator hint.
 
 local kConfigFile = "SSM_JoinPool.json"
 local kDefaultConfig = {
@@ -680,7 +682,8 @@ local function HintSpectators(now)
     Server.ForAllPlayers(function(player)
         local client = Server.GetOwner(player)
         local steamId = SteamIdOf(client)
-        if steamId and player:GetTeamNumber() == kSpectatorIndex and not PoolIndex(steamId) then
+        if steamId and player:GetTeamNumber() == kSpectatorIndex and not PoolIndex(steamId)
+            and not (SSM.SkillRequirement_IsHeld and SSM.SkillRequirement_IsHeld(client)) then
             Say(client, key)
         end
     end)
@@ -749,6 +752,10 @@ local function JoinPoolRequest(client, viaF4)
     end
     if viaF4 and PoolIndex(steamId) then
         Say(client, "joinpool_already_f4", #Pool)
+        return
+    end
+    -- Players held by the skill requirement (v1.6) are told why there instead.
+    if SSM.SkillRequirement_Refuse and SSM.SkillRequirement_Refuse(client) then
         return
     end
     local offReason = OffReason()
@@ -915,17 +922,12 @@ end)
 SSM.ListCommand("!readyq", "cmd_ready")
 
 -- sud_joinpool on|off, this round only (the pool is on by default and every new round starts on).
--- Who: the server console and every Shine admin, i.e. anyone in a Shine user group, with no
--- config change (author, 2026-11-21: "naturally Shine admins should have access"). Shine access
--- to sud_joinpool also works, for anyone given it explicitly.
+-- Who: the server console and every Shine admin (SSM.IsAdmin: anyone in a Shine user group but
+-- the skill requirement's allow group), with no config change (author, 2026-11-21: "naturally
+-- Shine admins should have access"). Shine access to sud_joinpool also works, for anyone given it
+-- explicitly.
 local function IsShineAdmin(client)
-    if not Shine then
-        return false
-    end
-    if Shine.GetUserData and Shine:GetUserData(client) then
-        return true
-    end
-    return Shine.HasAccess and Shine:HasAccess(client, "sud_joinpool") or false
+    return SSM.IsAdmin(client, "sud_joinpool")
 end
 SSM.JoinPool_IsAdmin = IsShineAdmin
 

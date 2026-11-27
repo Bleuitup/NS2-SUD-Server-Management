@@ -5,6 +5,7 @@ Mostly server side: since v1.2 the pause also runs a small part on players' mach
 clock can stand still for everyone. It does nothing unless the server pauses. Disconnected players
 have one small client part too, which sets up the use prompt for a player who takes over a body.
 The join pool (v1.3) has one as well: the `SUD Queue` label on the scoreboard and the taskbar flash.
+The skill requirement (v1.6) adds two buttons to Shine's admin menu.
 
 ## Commands and language
 
@@ -305,3 +306,60 @@ each other between rounds.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | `false`: the mod never touches all talk |
+
+## Skill requirement
+
+New in v1.6, off unless a server turns it on. Players below a Hive skill tier stay in spectator:
+they cannot go to the ready room, join a team or join the join pool. They can stay and spectate.
+
+- The tier is the scoreboard badge (the game's own formula). Players at `MinTier` and above
+  always play.
+- Exempt: everyone in Shine's user file (admins, trusted players and the allow group), anyone
+  with the `sud_allowed` permission, bots, and players from the countries on the server's
+  `AllowedCountries` list.
+- Country: looked up only for players below `MinTier` who are not exempt, and only when
+  `AllowedCountries` has entries. The server sends the player's IP to
+  [ip-api.com](https://ip-api.com) and gets back the 2-letter country code, which is kept in
+  memory for that map only and never saved. No answer within `UnknownCountryHoldSeconds` lets the
+  player through.
+- Players whose Hive skill has not loaded yet (the game shows -1) wait in spectator with a
+  "please wait" line, since team shuffles and balance need it. If it still has not loaded after
+  `HiveSkillGiveUpSeconds`, the game has stopped trying and the line says to reconnect.
+- Messages: a welcome once when a player is found below the requirement; on a refused move a
+  line in Spanish first, once, then the skill line with the tier asked for; admins on the server
+  get one line per player with the command to let them in. Welcome and Spanish line are
+  remembered for 12 hours, so map changes do not repeat them.
+- Moves an admin forces (`sh_setteam`, `sud_swap`) and shuffles still work. Restricted players
+  found in the ready room, after a map change for example, are moved to spectator so a shuffle
+  cannot place them.
+- Not on Thunderdome games, and not while the server has a password.
+- From v1.6, "admin" for SSM's admin commands means anyone in a Shine user group except the
+  allow group, so its members are ordinary players.
+
+### Letting a player in
+
+- `sud_allow <#id|name|Steam ID>` in the console adds the player to the allow group (`SudAllow`
+  unless `AllowGroup` says otherwise), with their name as the note. `#id` is the number
+  `sh_status` shows; players who are not on the server can be added by NS2 ID or `STEAM_0` ID.
+  The group is created if it is missing, granting only `sud_allowed`. A player already in another
+  Shine group is left alone, since they can already play.
+- `sud_disallow <#id|name|Steam ID>` takes them out of the allow group again.
+- Shine's admin menu has the same two buttons for the selected player: **Sud Allow** and
+  **Remove Sud Allow** (Commands tab, NS2 SUD).
+- Shine's own `sh_setusergroup <player> SudAllow` works too.
+
+### Server settings
+
+`SSM_SkillRequirement.json` in the server's config folder, created on first run:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `Enabled` | `false` | `true` turns the requirement on for this server |
+| `MinTier` | `4` | lowest badge tier that plays (1 Recruit to 7 Sanji Survivor) |
+| `AllowedCountries` | `[]` | 2-letter country codes whose players are exempt; empty means no lookups and nobody is exempt by country |
+| `UnknownCountryHoldSeconds` | `30` | how long a player waits for the country answer before being let through |
+| `HiveSkillGiveUpSeconds` | `60` | after this long with no Hive skill the line says to reconnect |
+| `AllowGroup` | `"SudAllow"` | the Shine group `sud_allow` uses |
+
+`SSM_SkillRequirementState.json` remembers who has seen the welcome and the Spanish line (Steam
+ID and time, kept 12 hours).
