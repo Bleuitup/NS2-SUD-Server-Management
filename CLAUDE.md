@@ -528,7 +528,7 @@ copy them into tracked files (author, 2026-11-27). Public text stays neutral; ne
 
 ## Open threads (remind the author)
 
-- **v1.6 published and tagged 2026-11-27** (merged into `main`; Workshop updated 13:20 by the page clock): the Skill Requirement and `SSM.IsAdmin`. The description section is the author's three bullets (no ip-api line, the author's choice; the README still explains the lookup). **Off until a server's `SSM_SkillRequirement.json` turns it on**; the 8v8 settings are in `private/skill-requirement.md`, applied by the Server Administration session with the author's OK. To see in game: the ip-api answer, the admin menu buttons, `#id` and name lookups, `SaveUsers` on the live file, the welcome's line lengths, the "¿" in the chat font.
+- **v1.6 published and tagged 2026-11-27** (merged into `main`; Workshop updated 13:20 by the page clock): the Skill Requirement and `SSM.IsAdmin`. The description section is the author's three bullets (no ip-api line, the author's choice; the README still explains the lookup). **On on the 8v8 since 2026-11-27 21:29 UTC** (Server Administration session, author's OK; only `Enabled` and `AllowedCountries` changed, backup `SSM_SkillRequirement.json.bak-20261127T212932Z`); the 6v6 is off. It logs no line at map load, unlike the pause and All Talk. To see in game: the ip-api answer, the admin menu buttons, `#id` and name lookups, `SaveUsers` on the live file, the welcome's line lengths, the "¿" in the chat font.
 - **v1.4 published and tagged 2026-11-26** (merged into `main`; the Workshop description has the
   All talk section): All Talk on at round end and map load. To see in game: Shine's line, that it
   comes back on after a map change, and that the 8v8 and 6v6 Shine configs have `basecommands`
