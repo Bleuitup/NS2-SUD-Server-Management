@@ -88,6 +88,7 @@ New in 1.3 and still being tested on live games.
 New in 1.6.
 [list]
 [*]Admins can set a minimum Hive skill tier for a server, with exceptions they choose. Players below it can stay and spectate
+[*]To check those exceptions, the server may look up a player's country from their IP address with ip-api.com. Only the country comes back, and it is not saved
 [*]If your Hive skill hasn't loaded yet, you wait in spectator for a few seconds, since team shuffles and balance need it. If it doesn't load, reconnect
 [*]Admins let a player in with [b]sud_allow[/b] in the console, or the Sud Allow button in Shine's admin menu
 [*]Not on Thunderdome or passworded games
